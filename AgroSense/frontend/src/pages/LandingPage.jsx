@@ -438,7 +438,7 @@ export default function LandingPage({ lang = 'en', onSignInClick }) {
               <span className="text-[9px] font-mono tracking-[0.2em] uppercase" style={{ color: '#2a4a35' }}>Intelligent Crop Health Platform</span>
             </div>
           </div>
-          <p className="text-xs font-mono" style={{ color: '#1e3028' }}>© 2025 AgroSense AI · All rights reserved</p>
+          <p className="text-xs font-mono" style={{ color: '#1e3028' }}>© 2026 AgroSense AI · All rights reserved</p>
           <div className="flex gap-6">
             {[['Diagnose', '/diagnose'], ['Weather', '/weather'], ['History', '/history'], ['About', '/about']].map(([l, p]) => (
               <Link key={p} to={p} className="text-xs font-500 transition-colors duration-200"
