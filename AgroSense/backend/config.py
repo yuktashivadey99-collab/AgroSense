@@ -30,6 +30,8 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://localhost:3000",
         "http://localhost:8000",
+        "https://agro-sense-five.vercel.app",
+        "https://*.vercel.app",
     ]
 
     # Security
