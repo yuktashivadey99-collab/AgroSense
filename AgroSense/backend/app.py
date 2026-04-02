@@ -33,6 +33,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
+    allow_origin_regex=settings.cors_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -127,7 +128,4 @@ if __name__ == "__main__":
         reload=settings.debug,
         log_level="debug" if settings.debug else "info"
     )
-    debug = os.getenv('FLASK_ENV', 'development') == 'development'
-    print(f"AgroSense AI Backend running on http://localhost:{port}")
-    app.run(host='0.0.0.0', port=port, debug=debug)
 

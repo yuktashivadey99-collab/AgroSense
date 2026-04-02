@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const DEFAULT_PROD_API_BASE_URL = 'https://agrosense-qnhc.onrender.com'
+const DEFAULT_PROD_API_BASE_URL = ''
 
 const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim().replace(/\/+$/, '')
 
