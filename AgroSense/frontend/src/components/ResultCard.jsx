@@ -3,6 +3,7 @@ import {
   AlertTriangle, CheckCircle, XCircle, Info,
   Droplets, Bug, ShieldCheck, TrendingUp, Activity
 } from 'lucide-react'
+import { apiUrl } from '../utils/api'
 
 const UI_TEXT = {
   en: {
@@ -188,7 +189,7 @@ export default function ResultCard({ result, lang = 'en' }) {
       {/* Download PDF */}
       <div className="flex justify-center">
         <button
-          onClick={() => window.open(`/api/v1/history/${result.id}/pdf`, '_blank')}
+          onClick={() => window.open(apiUrl(`/api/v1/history/${result.id}/pdf`), '_blank')}
           className="px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center gap-2"
           style={{
             background: 'linear-gradient(135deg, #34d399, #10b981)',

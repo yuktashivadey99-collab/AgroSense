@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Leaf, Layers, Send, Loader2, AlertCircle, Cpu, RotateCcw, Scan, CheckCircle2 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import axios from 'axios'
 import ImageUpload from '../components/ImageUpload'
 import ResultCard from '../components/ResultCard'
+import { apiClient } from '../utils/api'
 
 const STEPS = ['Upload', 'Analyse', 'Results']
 
@@ -43,7 +43,7 @@ export default function DiagnosisPage({ lang = 'en' }) {
     if (leafImage) fd.append('leaf_image', leafImage)
     if (stemImage) fd.append('stem_image', stemImage)
     try {
-      const res = await axios.post('/api/analyze', fd, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 30000 })
+      const res = await apiClient.post('/api/analyze', fd, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 30000 })
       setResult(res.data); setStep(2); toast.success(t.analysisComplete)
     } catch (err) {
       const msg = err.response?.data?.error || err.response?.data?.detail || t.analysisFailed

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { History, Trash2, Search, SlidersHorizontal } from 'lucide-react'
-import axios from 'axios'
 import toast from 'react-hot-toast'
+import { apiClient } from '../utils/api'
 
 const UI_TEXT = {
   en: {
@@ -67,14 +67,14 @@ export default function HistoryPage({ lang = 'en' }) {
   const [filter, setFilter]   = useState('All')
 
   useEffect(() => {
-    axios.get('/api/history')
+    apiClient.get('/api/history')
       .then(r => setRecords(r.data.records || []))
       .catch(() => setRecords(DEMO))
       .finally(() => setLoading(false))
   }, [])
 
   const del = async (id) => {
-    try { await axios.delete(`/api/history/${id}`) } catch {}
+    try { await apiClient.delete(`/api/history/${id}`) } catch {}
     setRecords(p => p.filter(r => r._id !== id))
     toast.success(t.recordRemoved)
   }
