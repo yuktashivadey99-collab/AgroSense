@@ -17,6 +17,33 @@ const UI_TEXT = {
   te: { title: 'పంట ఆరోగ్యం', highlight: 'నిర్ధారణ', sub: 'AI-ఆధారిత వ్యాధి గుర్తింపు కోసం ఆకు మరియు/లేదా కాండం చిత్రాలు అప్‌లోడ్ చేయండి.', btn: 'విశ్లేషణ నడపండి', reset: 'రీసెట్ చేయండి', analyzing: 'విశ్లేషిస్తోంది...', empty: 'కనీసం ఒక చిత్రం అప్‌లోడ్ చేయండి.', howTitle: 'విశ్లేషణ ఎలా పని చేస్తుంది', howDesc: 'చిత్రాలు MobileNetV2 CNN పైప్‌లైన్ ద్వారా ప్రాసెస్ చేయబడతాయి.', leafLabel: 'ఆకు చిత్రం', stemLabel: 'కాండం చిత్రం (ఐచ్ఛికం)', uploadError: 'కనీసం ఒక చిత్రం అప్‌లోడ్ చేయండి', analysisComplete: 'విశ్లేషణ పూర్తైంది!', analysisFailed: 'విశ్లేషణ విఫలమైంది. బ్యాకెండ్ నడుస్తోందని నిర్ధారించుకోండి.', demoResult: 'డెమో ఫలితాన్ని చూపిస్తోంది (బ్యాకెండ్ అందుబాటులో లేదు)' }
 }
 
+const demoResult = () => ({
+  id: `demo-${Date.now()}`,
+  disease_name: 'Demo Analysis Result',
+  classification: 'Preventive',
+  confidence: 0.82,
+  health_score: 74,
+  severity_score: 26,
+  cdi_score: 0.31,
+  leaf_result: {
+    disease: 'Leaf stress detected',
+    confidence: 0.82,
+  },
+  stem_result: null,
+  prevention: [
+    'Inspect the crop closely for early stress symptoms.',
+    'Avoid overwatering and improve field drainage if needed.',
+    'Monitor the next few days and re-run analysis when backend is available.',
+  ],
+  treatment: [
+    'This is a temporary demo fallback while the live backend is unavailable.',
+  ],
+  fertilizer: [
+    'Apply a balanced nutrient plan based on your field condition.',
+  ],
+  viability: 'This is a demo fallback result. Re-run the scan after the backend issue is fixed.',
+})
+
 export default function DiagnosisPage({ lang = 'en' }) {
   const t = UI_TEXT[lang] || UI_TEXT.en
   const { user } = useAuth()
