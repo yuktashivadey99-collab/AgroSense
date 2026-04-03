@@ -7,7 +7,7 @@ import os
 from typing import Optional
 from pymongo import MongoClient
 from pymongo.database import Database
-from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, OperationFailure
 from config import settings
 
 _client: Optional[MongoClient] = None
@@ -33,7 +33,7 @@ def get_db() -> Optional[Database]:
         _db = _client[settings.database_name]
         print("✅ MongoDB connected successfully")
         return _db
-    except (ConnectionFailure, ServerSelectionTimeoutError) as e:
+    except (ConnectionFailure, ServerSelectionTimeoutError, OperationFailure) as e:
         print(f"⚠️  MongoDB connection failed: {e}")
         print("   History features will use in-memory storage.")
         return None

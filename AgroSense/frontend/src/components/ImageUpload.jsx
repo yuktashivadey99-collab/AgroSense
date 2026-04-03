@@ -1,12 +1,12 @@
-import { useRef, useState, useCallback, useEffect, useMemo } from 'react'
+﻿import { useRef, useState, useCallback, useEffect, useMemo } from 'react'
 import { Upload, X, CheckCircle2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const UI_TEXT = {
-  en: { recommended: 'Recommended', optional: 'Optional' },
-  hi: { recommended: 'अनुशंसित', optional: 'वैकल्पिक' },
-  mr: { recommended: 'शिफारस केलेले', optional: 'पर्यायी' },
-  te: { recommended: 'సిఫార్సు చేయబడింది', optional: 'ఐచ్ఛికం' }
+  en: { recommended: 'Recommended', optional: 'Optional', drop: 'Drop image or', browse: 'browse', fileTypes: 'JPG, PNG, WebP · max 10MB' },
+  hi: { recommended: 'अनुशंसित', optional: 'वैकल्पिक', drop: 'छवि छोड़ें या', browse: 'ब्राउज़ करें', fileTypes: 'JPG, PNG, WebP · अधिकतम 10MB' },
+  mr: { recommended: 'शिफारस केलेले', optional: 'पर्यायी', drop: 'प्रतिमा टाका किंवा', browse: 'ब्राउझ करा', fileTypes: 'JPG, PNG, WebP · कमाल 10MB' },
+  te: { recommended: 'సిఫార్సు చేయబడింది', optional: 'ఐచ్ఛికం', drop: 'చిత్రాన్ని వదలండి లేదా', browse: 'బ్రౌజ్ చేయండి', fileTypes: 'JPG, PNG, WebP · గరిష్ఠం 10MB' },
 }
 
 export default function ImageUpload({ label, sublabel, icon: Icon, value, onChange, lang = 'en' }) {
@@ -94,11 +94,7 @@ export default function ImageUpload({ label, sublabel, icon: Icon, value, onChan
               exit={{ opacity: 0 }}
               className="relative"
             >
-              <img
-                src={previewUrl}
-                alt="preview"
-                className="w-full h-36 object-cover rounded-xl"
-              />
+              <img src={previewUrl} alt="preview" className="w-full h-36 object-cover rounded-xl" />
               <div className="absolute inset-0 bg-gradient-to-t from-ink-950/70 to-transparent rounded-xl" />
               <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -122,17 +118,14 @@ export default function ImageUpload({ label, sublabel, icon: Icon, value, onChan
               exit={{ opacity: 0 }}
               className="flex flex-col items-center gap-3 py-2"
             >
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center"
-                style={{ background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.18)' }}
-              >
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.18)' }}>
                 <Upload size={20} style={{ color: '#34d399' }} />
               </div>
               <div>
                 <p className="text-sm font-500" style={{ color: '#a7c4b5' }}>
-                  Drop image or <span style={{ color: '#34d399' }}>browse</span>
+                  {t.drop} <span style={{ color: '#34d399' }}>{t.browse}</span>
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: '#3d5a47' }}>JPG, PNG, WebP · max 10MB</p>
+                <p className="text-xs mt-0.5" style={{ color: '#3d5a47' }}>{t.fileTypes}</p>
               </div>
             </motion.div>
           )}
