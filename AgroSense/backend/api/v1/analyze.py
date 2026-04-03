@@ -86,16 +86,19 @@ async def analyze(
     logger.info("analysis_completed", disease_name=result.get("disease_name"), health_score=result.get("health_score"))
 
     # Persist to DB
-    record = {**result, "created_at": datetime.datetime.utcnow().isoformat()}
+    record = {
+        **result,
+        "id": str(uuid.uuid4()),
+        "created_at": datetime.datetime.utcnow().isoformat(),
+    }
     if collection is not None:
         try:
             inserted = collection.insert_one({**record})
             record['id'] = str(inserted.inserted_id)
         except Exception as e:
             logger.warning("database_insert_failed", error=str(e))
-            # Continue with in-memory fallback
+            _in_memory_history.append(record)
     else:
-        record['id'] = str(uuid.uuid4())
         _in_memory_history.append(record)
 
     # Clean leaf/stem sub-results for response
