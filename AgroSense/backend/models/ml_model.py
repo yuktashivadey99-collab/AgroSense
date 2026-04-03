@@ -171,9 +171,14 @@ def load_model(model_path: str = None):
     path = model_path or settings.model_path
 
     if os.path.exists(path):
-        tf = _load_tf()
-        print(f"Loading model from {path}")
-        _model = tf.keras.models.load_model(path)
+        try:
+            tf = _load_tf()
+            print(f"Loading model from {path}")
+            _model = tf.keras.models.load_model(path)
+        except Exception as exc:
+            print(f"Model load failed for '{path}': {exc}")
+            print("Using statistical fallback predictor instead.")
+            _model = None
     else:
         print(f"Model not found at '{path}'. Using statistical fallback predictor.")
         _model = None
