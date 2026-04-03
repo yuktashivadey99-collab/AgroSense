@@ -1,12 +1,19 @@
 {
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "https://agrosense-qnhc.onrender.com/api/$1"
+      "src": "/api/(.*)",
+      "dest": "https://agrosense-qnhc.onrender.com/api/$1"
     },
     {
-      "source": "/health",
-      "destination": "https://agrosense-qnhc.onrender.com/health"
+      "src": "/health",
+      "dest": "https://agrosense-qnhc.onrender.com/health"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
