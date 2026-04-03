@@ -4,41 +4,43 @@ import { History, Trash2, Search, SlidersHorizontal } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { apiClient } from '../utils/api'
 import { formatLocalizedDate, translateClassification, translateDiseaseName } from '../utils/localization'
+import { useAuth } from '../contexts/AuthContext'
+import AuthModal from '../components/AuthModal'
 
 const UI_TEXT = {
   en: {
     title: 'Diagnosis History', subtitle: 'Track all previous crop health diagnoses and monitor trends.',
     totalScans: 'Total Scans', healthy: 'Healthy', critical: 'Critical', treatable: 'Treatable',
     searchPlaceholder: 'Search disease name...', noRecords: 'No records found. Run your first analysis!',
-    health: 'Health', conf: 'Confidence', records: 'Your Analysis Records', recordRemoved: 'Record removed'
+    health: 'Health', conf: 'Confidence', records: 'Your Analysis Records', recordRemoved: 'Record removed',
+    signInTitle: 'Sign In to View History', signInDesc: 'History is now private. Only the signed-in user can view their own scans.',
+    signInButton: 'Sign In / Create Account'
   },
   hi: {
     title: 'निदान इतिहास', subtitle: 'पिछले सभी फसल स्वास्थ्य निदानों को ट्रैक करें और रुझानों की निगरानी करें।',
     totalScans: 'कुल स्कैन', healthy: 'स्वस्थ', critical: 'गंभीर', treatable: 'उपचार योग्य',
     searchPlaceholder: 'रोग का नाम खोजें...', noRecords: 'कोई रिकॉर्ड नहीं मिला। अपना पहला विश्लेषण चलाएँ!',
-    health: 'स्वास्थ्य', conf: 'विश्वास', records: 'आपके विश्लेषण रिकॉर्ड', recordRemoved: 'रिकॉर्ड हटाया गया'
+    health: 'स्वास्थ्य', conf: 'विश्वास', records: 'आपके विश्लेषण रिकॉर्ड', recordRemoved: 'रिकॉर्ड हटाया गया',
+    signInTitle: 'इतिहास देखने के लिए साइन इन करें', signInDesc: 'इतिहास अब निजी है। केवल साइन-इन उपयोगकर्ता अपने स्कैन देख सकते हैं।',
+    signInButton: 'साइन इन / खाता बनाएं'
   },
   mr: {
     title: 'निदान इतिहास', subtitle: 'मागील सर्व पीक आरोग्य निदान ट्रॅक करा आणि ट्रेंड पाहा.',
     totalScans: 'एकूण स्कॅन', healthy: 'निरोगी', critical: 'गंभीर', treatable: 'उपचारयोग्य',
     searchPlaceholder: 'रोगाचे नाव शोधा...', noRecords: 'रेकॉर्ड सापडले नाहीत. पहिले विश्लेषण चालवा!',
-    health: 'आरोग्य', conf: 'विश्वास', records: 'तुमचे विश्लेषण रेकॉर्ड', recordRemoved: 'रेकॉर्ड काढला'
+    health: 'आरोग्य', conf: 'विश्वास', records: 'तुमचे विश्लेषण रेकॉर्ड', recordRemoved: 'रेकॉर्ड काढला',
+    signInTitle: 'इतिहास पाहण्यासाठी साइन इन करा', signInDesc: 'इतिहास आता खाजगी आहे. फक्त साइन-इन वापरकर्ता स्वतःचे स्कॅन पाहू शकतो.',
+    signInButton: 'साइन इन / खाते तयार करा'
   },
   te: {
     title: 'నిర్ధారణ చరిత్ర', subtitle: 'గత పంట ఆరోగ్య నిర్ధారణలను ట్రాక్ చేసి ధోరణులను గమనించండి.',
     totalScans: 'మొత్తం స్కాన్‌లు', healthy: 'ఆరోగ్యకరం', critical: 'తీవ్రం', treatable: 'చికిత్సాయోగ్యం',
     searchPlaceholder: 'వ్యాధి పేరు వెతకండి...', noRecords: 'రికార్డులు లేవు. మీ మొదటి విశ్లేషణను ప్రారంభించండి!',
-    health: 'ఆరోగ్యం', conf: 'నమ్మకం', records: 'మీ విశ్లేషణ రికార్డులు', recordRemoved: 'రికార్డు తొలగించబడింది'
+    health: 'ఆరోగ్యం', conf: 'నమ్మకం', records: 'మీ విశ్లేషణ రికార్డులు', recordRemoved: 'రికార్డు తొలగించబడింది',
+    signInTitle: 'చరిత్ర చూడడానికి సైన్ ఇన్ చేయండి', signInDesc: 'చరిత్ర ఇప్పుడు ప్రైవేట్. సైన్ ఇన్ చేసిన వినియోగదారుడు మాత్రమే తన స్కాన్‌లను చూడగలరు.',
+    signInButton: 'సైన్ ఇన్ / ఖాతా సృష్టించండి'
   },
 }
-
-const DEMO = [
-  { _id: '1', disease_name: 'Early Blight (Alternaria solani)', classification: 'Treatable', health_score: 61, confidence: 0.873, created_at: new Date(Date.now() - 86400000).toISOString() },
-  { _id: '2', disease_name: 'Healthy Plant', classification: 'Healthy', health_score: 96, confidence: 0.944, created_at: new Date(Date.now() - 172800000).toISOString() },
-  { _id: '3', disease_name: 'Late Blight (Phytophthora infestans)', classification: 'Critical', health_score: 22, confidence: 0.91, created_at: new Date(Date.now() - 259200000).toISOString() },
-  { _id: '4', disease_name: 'Powdery Mildew', classification: 'Preventive', health_score: 78, confidence: 0.802, created_at: new Date(Date.now() - 345600000).toISOString() },
-  { _id: '5', disease_name: 'Leaf Rust', classification: 'Treatable', health_score: 55, confidence: 0.761, created_at: new Date(Date.now() - 432000000).toISOString() },
-]
 
 const CC = {
   Healthy: '#34d399',
@@ -52,24 +54,50 @@ const CATS = ['All', 'Healthy', 'Preventive', 'Treatable', 'Critical', 'Remove']
 
 export default function HistoryPage({ lang = 'en' }) {
   const t = UI_TEXT[lang] || UI_TEXT.en
+  const { user } = useAuth()
+  const [authModal, setAuthModal] = useState({ open: false })
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('All')
 
   useEffect(() => {
+    if (!user) {
+      setRecords([])
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
     apiClient.get('/api/history')
       .then((r) => setRecords(r.data.records || []))
-      .catch(() => setRecords(DEMO))
+      .catch(() => setRecords([]))
       .finally(() => setLoading(false))
-  }, [])
+  }, [user])
 
   const del = async (id) => {
     try {
       await apiClient.delete(`/api/history/${id}`)
     } catch {}
-    setRecords((prev) => prev.filter((record) => record._id !== id))
+    setRecords((prev) => prev.filter((record) => record.id !== id))
     toast.success(t.recordRemoved)
+  }
+
+  if (!user) {
+    return (
+      <>
+        <div className="min-h-screen flex flex-col items-center justify-center px-6 pt-28 pb-20 relative">
+          <div className="text-center max-w-md">
+            <h1 className="font-display text-3xl mb-3" style={{ color: '#e8f5ee' }}>{t.signInTitle}</h1>
+            <p className="text-sm mb-8" style={{ color: '#4d6e5c' }}>{t.signInDesc}</p>
+            <button onClick={() => setAuthModal({ open: true })} className="btn-primary px-8 py-3 text-sm">
+              {t.signInButton}
+            </button>
+          </div>
+        </div>
+        <AuthModal isOpen={authModal.open} onClose={() => setAuthModal({ open: false })} defaultTab="signin" lang={lang} />
+      </>
+    )
   }
 
   const filtered = records.filter((record) => {
@@ -149,10 +177,10 @@ export default function HistoryPage({ lang = 'en' }) {
               <p className="text-sm" style={{ color: '#3d5a47', fontFamily: 'Inter' }}>{t.noRecords}</p>
             </motion.div>
           ) : (
-            filtered.map(({ _id, disease_name, classification, health_score, confidence, created_at }, i) => {
+            filtered.map(({ id, disease_name, classification, health_score, confidence, created_at }, i) => {
               const col = CC[classification] || '#34d399'
               return (
-                <motion.div key={_id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="glass-bright p-5 flex items-center gap-4 group transition-all duration-250 hover:border-em-400/20" style={{ borderRadius: 20 }}>
+                <motion.div key={id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="glass-bright p-5 flex items-center gap-4 group transition-all duration-250 hover:border-em-400/20" style={{ borderRadius: 20 }}>
                   <div className="w-1 h-12 rounded-full flex-shrink-0" style={{ background: col, boxShadow: `0 0 12px ${col}70` }} />
 
                   <div className="flex-shrink-0 hidden sm:block">
@@ -180,7 +208,7 @@ export default function HistoryPage({ lang = 'en' }) {
                   </div>
 
                   <button
-                    onClick={() => del(_id)}
+                    onClick={() => del(id)}
                     className="p-2.5 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-200"
                     style={{ color: '#3d5a47' }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(244,63,94,0.10)'; e.currentTarget.style.color = '#f43f5e' }}

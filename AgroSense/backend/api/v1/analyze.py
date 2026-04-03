@@ -5,7 +5,7 @@ Analyze endpoint for AgroSense AI API v1
 import datetime
 import uuid
 from typing import Optional
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 from pymongo.collection import Collection
 import structlog
 
@@ -17,7 +17,7 @@ from utils.image_processing import (
     analyze_stem,
 )
 from models.ml_model import predict_leaf_disease, adaptive_fusion
-from dependencies import get_predictions_collection, get_logger
+from dependencies import get_predictions_collection, get_logger, get_current_user_email
 
 router = APIRouter()
 logger = get_logger()
@@ -38,7 +38,9 @@ _in_memory_history = []
 async def analyze(
     leaf_image: Optional[UploadFile] = File(None),
     stem_image: Optional[UploadFile] = File(None),
-    collection: Optional[Collection] = Depends(get_predictions_collection)
+    crop_name: str = Form(...),
+    collection: Optional[Collection] = Depends(get_predictions_collection),
+    user_email: str = Depends(get_current_user_email),
 ):
     """
     Analyze plant images for disease detection.
@@ -46,7 +48,17 @@ async def analyze(
     Accepts multipart/form-data with optional leaf_image and stem_image fields.
     Returns full disease analysis JSON.
     """
-    logger.info("analyze_endpoint_called", leaf_provided=leaf_image is not None, stem_provided=stem_image is not None)
+    normalized_crop_name = crop_name.strip()
+    if not normalized_crop_name:
+        raise HTTPException(status_code=400, detail="Crop selection is required")
+
+    logger.info(
+        "analyze_endpoint_called",
+        leaf_provided=leaf_image is not None,
+        stem_provided=stem_image is not None,
+        crop_name=normalized_crop_name,
+        user_email=user_email,
+    )
 
     if not leaf_image and not stem_image:
         raise HTTPException(status_code=400, detail="At least one image (leaf or stem) is required")
@@ -62,7 +74,7 @@ async def analyze(
             leaf_img = load_image_from_bytes(leaf_bytes)
             leaf_arr = preprocess_for_model(leaf_img)
             cdi_score = calculate_cdi(leaf_img)
-            leaf_result = predict_leaf_disease(leaf_arr)
+            leaf_result = predict_leaf_disease(leaf_arr, selected_crop=normalized_crop_name)
             logger.info("leaf_analysis_completed", disease=leaf_result.get("disease"))
         except Exception as e:
             logger.error("leaf_image_processing_failed", error=str(e))
@@ -88,13 +100,14 @@ async def analyze(
     # Persist to DB
     record = {
         **result,
+        "crop_name": normalized_crop_name,
+        "user_email": user_email,
         "id": str(uuid.uuid4()),
         "created_at": datetime.datetime.utcnow().isoformat(),
     }
     if collection is not None:
         try:
-            inserted = collection.insert_one({**record})
-            record['id'] = str(inserted.inserted_id)
+            collection.insert_one({**record})
         except Exception as e:
             logger.warning("database_insert_failed", error=str(e))
             _in_memory_history.append(record)

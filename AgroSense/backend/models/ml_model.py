@@ -186,7 +186,58 @@ def load_model(model_path: str = None):
     return _model
 
 
-def predict_leaf_disease(image_array: np.ndarray) -> dict:
+def _normalize_crop_name(crop_name: str | None) -> str | None:
+    if not crop_name:
+        return None
+    return crop_name.strip().lower().replace("-", " ").replace("_", " ")
+
+
+def _crop_label_from_disease_class(disease_class: str) -> str:
+    return disease_class.split("___", 1)[0].replace(",", "").replace("_", " ").lower()
+
+
+def _crop_matches(selected_crop: str | None, disease_class: str) -> bool:
+    normalized_crop = _normalize_crop_name(selected_crop)
+    if not normalized_crop:
+        return False
+
+    predicted_crop = _crop_label_from_disease_class(disease_class)
+    aliases = {
+        "tomato": {"tomato"},
+        "corn": {"corn", "maize"},
+        "maize": {"corn", "maize"},
+        "grapes": {"grape", "grapes"},
+        "grape": {"grape", "grapes"},
+        "capsicum": {"capsicum", "pepper bell", "bell pepper", "pepper"},
+        "chilly": {"chilly", "chili", "chilli", "pepper"},
+        "cabbage": {"cabbage"},
+        "cotton": {"cotton"},
+        "bottle gourd": {"bottle gourd"},
+    }
+    allowed = aliases.get(normalized_crop, {normalized_crop})
+    return predicted_crop in allowed
+
+
+def _build_unknown_crop_result(selected_crop: str | None) -> dict:
+    recs = RECOMMENDATIONS["default"]
+    crop_label = (selected_crop or "selected crop").strip() or "selected crop"
+    return {
+        "disease_class": "Unknown",
+        "disease": f"Unverified result for {crop_label}",
+        "confidence": 0.18,
+        "is_healthy": False,
+        "recommendations": {
+            **recs,
+            "viability": (
+                "The uploaded image does not confidently match the selected crop. "
+                "Retake the photo on a clear leaf from the chosen plant."
+            ),
+        },
+        "requires_review": True,
+    }
+
+
+def predict_leaf_disease(image_array: np.ndarray, selected_crop: str | None = None) -> dict:
     """
     Run leaf disease prediction.
     Falls back to a deterministic heuristic if no model is loaded.
@@ -199,19 +250,25 @@ def predict_leaf_disease(image_array: np.ndarray) -> dict:
         class_idx = int(np.argmax(preds))
         confidence = float(preds[class_idx])
         disease_class = DISEASE_CLASSES[class_idx] if class_idx < len(DISEASE_CLASSES) else "Unknown"
+        top_two = np.sort(preds)[-2:]
+        confidence_gap = float(top_two[-1] - top_two[-2]) if len(top_two) > 1 else float(top_two[-1])
+        confidence = max(0.0, min(confidence * (0.55 + confidence_gap), 0.97))
     else:
         # ── Heuristic fallback (based on color statistics) ──
         # Mean green channel intensity as proxy for health
         green_mean = float(image_array[0, :, :, 1].mean())
         if green_mean > 0.45:
             disease_class = "Tomato___healthy"
-            confidence = min(0.70 + green_mean * 0.3, 0.96)
+            confidence = min(0.42 + green_mean * 0.18, 0.68)
         elif green_mean > 0.30:
             disease_class = "Tomato___Early_blight"
-            confidence = 0.72 + (0.45 - green_mean)
+            confidence = min(0.36 + (0.45 - green_mean) * 0.5, 0.61)
         else:
             disease_class = "Tomato___Late_blight"
-            confidence = 0.78 + (0.30 - green_mean)
+            confidence = min(0.38 + (0.30 - green_mean) * 0.55, 0.62)
+
+    if selected_crop and not _crop_matches(selected_crop, disease_class):
+        return _build_unknown_crop_result(selected_crop)
 
     display = DISPLAY_NAMES.get(disease_class, disease_class.replace("_", " "))
     recs = _get_recs(disease_class)
@@ -222,6 +279,7 @@ def predict_leaf_disease(image_array: np.ndarray) -> dict:
         "confidence":    round(float(confidence), 4),
         "is_healthy":    "healthy" in disease_class.lower(),
         "recommendations": recs,
+        "requires_review": False,
     }
 
 
@@ -262,7 +320,9 @@ def adaptive_fusion(
     if leaf_result:
         # Confidence-weighted leaf health
         conf = leaf_result.get("confidence", 0.5)
-        if leaf_result.get("is_healthy"):
+        if leaf_result.get("requires_review"):
+            leaf_health = 28 + (1.0 - conf) * 18
+        elif leaf_result.get("is_healthy"):
             leaf_health = 50 + conf * 50       # 50-100
         else:
             leaf_health = (1.0 - conf) * 60    # 0-60
@@ -304,7 +364,7 @@ def adaptive_fusion(
     return {
         "disease_name":   disease_name,
         "classification": classification,
-        "confidence":     leaf_result.get("confidence", 0.5) if leaf_result else 0.5,
+        "confidence":     leaf_result.get("confidence", 0.35) if leaf_result else 0.35,
         "health_score":   round(health_score,   2),
         "severity_score": round(severity_score, 2),
         "cdi_score":      round(cdi_score,       4),

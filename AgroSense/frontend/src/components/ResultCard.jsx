@@ -3,7 +3,7 @@ import {
   AlertTriangle, CheckCircle, XCircle, Info,
   Droplets, Bug, ShieldCheck, TrendingUp, Activity
 } from 'lucide-react'
-import { apiUrl } from '../utils/api'
+import { apiClient } from '../utils/api'
 import {
   translateClassification,
   translateDiseaseName,
@@ -132,6 +132,24 @@ export default function ResultCard({ result, lang = 'en' }) {
   const localizedDiseaseName = translateDiseaseName(disease_name, lang)
   const localizedViability = translateText(viability, lang)
 
+  const handleDownloadPdf = async () => {
+    try {
+      const response = await apiClient.get(`/api/v1/history/${result.id}/pdf`, {
+        responseType: 'blob',
+      })
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))
+      const link = document.createElement('a')
+      link.href = blobUrl
+      link.download = `agrosense_report_${result.id}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(blobUrl)
+    } catch (error) {
+      console.error('PDF download failed', error)
+    }
+  }
+
   return (
     <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="space-y-4">
       <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}>
@@ -218,7 +236,7 @@ export default function ResultCard({ result, lang = 'en' }) {
 
       <div className="flex justify-center">
         <button
-          onClick={() => window.open(apiUrl(`/api/v1/history/${result.id}/pdf`), '_blank')}
+          onClick={handleDownloadPdf}
           className="px-6 py-3 rounded-xl font-medium transition-all duration-200 flex items-center gap-2"
           style={{
             background: 'linear-gradient(135deg, #34d399, #10b981)',

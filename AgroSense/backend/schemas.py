@@ -36,6 +36,7 @@ class StemResult(BaseModel):
 
 class AnalysisResponse(BaseModel):
     id: str
+    crop_name: str
     disease_name: str
     classification: str
     confidence: float
@@ -53,6 +54,7 @@ class AnalysisResponse(BaseModel):
 
 class HistoryRecord(BaseModel):
     id: str
+    crop_name: Optional[str] = None
     disease_name: str
     classification: str
     health_score: float

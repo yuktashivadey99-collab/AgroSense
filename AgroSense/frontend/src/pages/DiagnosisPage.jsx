@@ -8,6 +8,18 @@ import ImageUpload from '../components/ImageUpload'
 import ResultCard from '../components/ResultCard'
 import { apiClient } from '../utils/api'
 
+const SUPPORTED_CROPS = [
+  'Tomato',
+  'Cotton',
+  'Grapes',
+  'Chilly',
+  'Capsicum',
+  'Maize',
+  'Cabbage',
+  'Corn',
+  'Bottle Gourd',
+]
+
 const STEP_LABELS = {
   en: ['Upload', 'Analyse', 'Results'],
   hi: ['अपलोड', 'विश्लेषण', 'परिणाम'],
@@ -24,6 +36,8 @@ const UI_TEXT = {
     howTitle: 'How Analysis Works',
     howDesc: 'Images are processed through our MobileNetV2 CNN pipeline. Leaf images detect disease type and confidence. Stem images check browning ratios. The CDI measures stress. All signals are fused into a final health classification.',
     leafLabel: 'Leaf Image', stemLabel: 'Stem Image (Optional)', uploadError: 'Upload at least one image',
+    cropLabel: 'Selected Crop', cropPlaceholder: 'Choose the crop before scanning',
+    cropRequired: 'Select the crop first so the model does not guess the wrong plant.',
     analysisComplete: 'Analysis complete!', analysisFailed: 'Analysis failed. Make sure the backend is running.',
     demoResult: 'Showing demo result (backend unavailable)',
     signInTitle: 'Sign In to Analyze',
@@ -41,6 +55,8 @@ const UI_TEXT = {
     howTitle: 'विश्लेषण कैसे काम करता है',
     howDesc: 'छवियों को MobileNetV2 CNN पाइपलाइन से प्रोसेस किया जाता है। पत्ती छवि रोग और विश्वास स्तर बताती है। तना छवि भूरापन मापती है। CDI तनाव मापता है।',
     leafLabel: 'पत्ती छवि', stemLabel: 'तना छवि (वैकल्पिक)', uploadError: 'कम से कम एक छवि अपलोड करें',
+    cropLabel: 'चयनित फसल', cropPlaceholder: 'स्कैन से पहले फसल चुनें',
+    cropRequired: 'पहले फसल चुनें ताकि मॉडल गलत पौधे का अनुमान न लगाए।',
     analysisComplete: 'विश्लेषण पूरा हुआ!', analysisFailed: 'विश्लेषण विफल। कृपया बैकएंड चल रहा है या नहीं जांचें।',
     demoResult: 'डेमो परिणाम दिखाया जा रहा है (बैकएंड उपलब्ध नहीं है)',
     signInTitle: 'विश्लेषण के लिए साइन इन करें',
@@ -58,6 +74,8 @@ const UI_TEXT = {
     howTitle: 'विश्लेषण कसे काम करते',
     howDesc: 'प्रतिमा MobileNetV2 CNN पाइपलाइनद्वारे प्रक्रिया केल्या जातात. पान प्रतिमा रोग आणि विश्वास दाखवते. खोड प्रतिमा तपकिरीपणा मोजते. CDI ताण मोजतो.',
     leafLabel: 'पान प्रतिमा', stemLabel: 'खोड प्रतिमा (पर्यायी)', uploadError: 'किमान एक प्रतिमा अपलोड करा',
+    cropLabel: 'निवडलेले पीक', cropPlaceholder: 'स्कॅन करण्यापूर्वी पीक निवडा',
+    cropRequired: 'मॉडेल चुकीचे पीक ओळखू नये म्हणून आधी पीक निवडा.',
     analysisComplete: 'विश्लेषण पूर्ण झाले!', analysisFailed: 'विश्लेषण अयशस्वी. कृपया बॅकएंड चालू आहे का ते तपासा.',
     demoResult: 'डेमो निकाल दाखवला जात आहे (बॅकएंड उपलब्ध नाही)',
     signInTitle: 'विश्लेषणासाठी साइन इन करा',
@@ -75,6 +93,8 @@ const UI_TEXT = {
     howTitle: 'విశ్లేషణ ఎలా పనిచేస్తుంది',
     howDesc: 'చిత్రాలు MobileNetV2 CNN పైప్‌లైన్ ద్వారా ప్రాసెస్ చేయబడతాయి. ఆకు చిత్రం వ్యాధి మరియు నమ్మకాన్ని చూపుతుంది. కాండం చిత్రం గోధుమరంగు మార్పును కొలుస్తుంది. CDI ఒత్తిడిని కొలుస్తుంది.',
     leafLabel: 'ఆకు చిత్రం', stemLabel: 'కాండం చిత్రం (ఐచ్చికం)', uploadError: 'కనీసం ఒక చిత్రం అప్‌లోడ్ చేయండి',
+    cropLabel: 'ఎంచుకున్న పంట', cropPlaceholder: 'స్కాన్ చేయడానికి ముందు పంటను ఎంచుకోండి',
+    cropRequired: 'మోడల్ తప్పు మొక్కను ఊహించకుండా ముందుగా పంటను ఎంచుకోండి.',
     analysisComplete: 'విశ్లేషణ పూర్తైంది!', analysisFailed: 'విశ్లేషణ విఫలమైంది. దయచేసి బ్యాక్‌ఎండ్ నడుస్తుందో చూడండి.',
     demoResult: 'డెమో ఫలితం చూపబడుతోంది (బ్యాక్‌ఎండ్ అందుబాటులో లేదు)',
     signInTitle: 'విశ్లేషణ కోసం సైన్ ఇన్ చేయండి',
@@ -176,11 +196,21 @@ export default function DiagnosisPage({ lang = 'en' }) {
     const urlParams = new URLSearchParams(window.location.search)
     const crop = urlParams.get('crop')
     if (crop) {
-      setSelectedCrop(crop.charAt(0).toUpperCase() + crop.slice(1))
+      const normalizedCrop = crop
+        .split(' ')
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ')
+      const matchedCrop = SUPPORTED_CROPS.find((item) => item.toLowerCase() === normalizedCrop.toLowerCase())
+      setSelectedCrop(matchedCrop || normalizedCrop)
     }
   }, [])
 
   const handleAnalyze = async () => {
+    if (!selectedCrop) {
+      toast.error(t.cropRequired)
+      return
+    }
+
     if (!leafImage && !stemImage) {
       toast.error(t.uploadError)
       return
@@ -192,6 +222,7 @@ export default function DiagnosisPage({ lang = 'en' }) {
     const fd = new FormData()
     if (leafImage) fd.append('leaf_image', leafImage)
     if (stemImage) fd.append('stem_image', stemImage)
+    fd.append('crop_name', selectedCrop)
 
     try {
       const res = await apiClient.post('/api/analyze', fd, {
@@ -303,6 +334,27 @@ export default function DiagnosisPage({ lang = 'en' }) {
           {step === 0 && (
             <motion.div key="upload" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-8">
               <div className="grid md:grid-cols-2 gap-6">
+                <div className="glass-card p-5 md:col-span-2">
+                  <label className="block text-sm mb-2" style={{ color: '#9ac9b5' }}>{t.cropLabel}</label>
+                  <select
+                    value={selectedCrop || ''}
+                    onChange={(e) => setSelectedCrop(e.target.value || null)}
+                    className="w-full px-4 py-3 rounded-2xl outline-none"
+                    style={{
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(52,211,153,0.15)',
+                      color: '#ddeee5',
+                    }}
+                  >
+                    <option value="">{t.cropPlaceholder}</option>
+                    {SUPPORTED_CROPS.map((crop) => (
+                      <option key={crop} value={crop} style={{ color: '#0f172a' }}>
+                        {crop}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs mt-2" style={{ color: '#6b7d75' }}>{t.cropRequired}</p>
+                </div>
                 <ImageUpload label={t.leafLabel} icon={Leaf} value={leafImage} onChange={setLeafImage} lang={lang} />
                 <ImageUpload label={t.stemLabel} icon={Layers} value={stemImage} onChange={setStemImage} lang={lang} />
               </div>
@@ -310,7 +362,7 @@ export default function DiagnosisPage({ lang = 'en' }) {
               <div className="text-center">
                 <motion.button
                   onClick={handleAnalyze}
-                  disabled={!leafImage && !stemImage}
+                  disabled={!selectedCrop || (!leafImage && !stemImage)}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className="px-8 py-4 rounded-2xl font-600 text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 mx-auto"

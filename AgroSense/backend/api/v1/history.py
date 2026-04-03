@@ -9,7 +9,7 @@ from bson import ObjectId
 import structlog
 
 from schemas import HistoryResponse, StatsResponse, ErrorResponse
-from dependencies import get_predictions_collection, get_logger
+from dependencies import get_predictions_collection, get_logger, get_current_user_email
 from api.v1.analyze import _in_memory_history
 
 router = APIRouter()
@@ -21,31 +21,37 @@ logger = get_logger()
     response_model=HistoryResponse,
     responses={500: {"model": ErrorResponse}}
 )
-async def get_history(collection: Optional[Collection] = Depends(get_predictions_collection)):
-    """Fetch all prediction records."""
-    logger.info("get_history_called")
+async def get_history(
+    collection: Optional[Collection] = Depends(get_predictions_collection),
+    user_email: str = Depends(get_current_user_email),
+):
+    """Fetch prediction records for the signed-in user only."""
+    logger.info("get_history_called", user_email=user_email)
 
     if collection is not None:
         try:
             docs = list(
                 collection.find(
-                    {},
-                    {"_id": 1, "disease_name": 1, "classification": 1,
+                    {"user_email": user_email},
+                    {"_id": 0, "id": 1, "crop_name": 1, "disease_name": 1, "classification": 1,
                      "health_score": 1, "confidence": 1, "created_at": 1}
                 ).sort("created_at", -1).limit(100)
             )
-            for d in docs:
-                d['_id'] = str(d['_id'])
             records = docs
         except Exception as e:
             logger.error("database_query_failed", error=str(e))
             raise HTTPException(status_code=500, detail=str(e))
     else:
         # In-memory fallback
-        records = sorted(_in_memory_history, key=lambda x: x.get('created_at', ''), reverse=True)
+        records = sorted(
+            [r for r in _in_memory_history if r.get("user_email") == user_email],
+            key=lambda x: x.get('created_at', ''),
+            reverse=True
+        )
         records = [
             {
-                "_id": r.get("_id"),
+                "id": r.get("id"),
+                "crop_name": r.get("crop_name"),
                 "disease_name": r.get("disease_name"),
                 "classification": r.get("classification"),
                 "health_score": r.get("health_score"),
@@ -67,17 +73,23 @@ async def get_history(collection: Optional[Collection] = Depends(get_predictions
 )
 async def delete_record(
     record_id: str,
-    collection: Optional[Collection] = Depends(get_predictions_collection)
+    collection: Optional[Collection] = Depends(get_predictions_collection),
+    user_email: str = Depends(get_current_user_email),
 ):
     """Delete a record by ID."""
-    logger.info("delete_record_called", record_id=record_id)
+    logger.info("delete_record_called", record_id=record_id, user_email=user_email)
 
     if collection is not None:
         try:
-            result = collection.delete_one({"_id": ObjectId(record_id)})
+            if ObjectId.is_valid(record_id):
+                result = collection.delete_one({"_id": ObjectId(record_id), "user_email": user_email})
+            else:
+                result = collection.delete_one({"id": record_id, "user_email": user_email})
             if result.deleted_count == 0:
                 raise HTTPException(status_code=404, detail="Record not found")
             return {"message": "Deleted successfully"}
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error("database_delete_failed", error=str(e))
             raise HTTPException(status_code=500, detail=str(e))
@@ -85,7 +97,10 @@ async def delete_record(
         # In-memory fallback
         global _in_memory_history
         before = len(_in_memory_history)
-        _in_memory_history = [r for r in _in_memory_history if r.get('_id') != record_id]
+        _in_memory_history = [
+            r for r in _in_memory_history
+            if not (r.get('id') == record_id and r.get("user_email") == user_email)
+        ]
         if len(_in_memory_history) == before:
             raise HTTPException(status_code=404, detail="Record not found")
         return {"message": "Deleted successfully"}
@@ -96,19 +111,22 @@ async def delete_record(
     response_model=StatsResponse,
     responses={500: {"model": ErrorResponse}}
 )
-async def get_stats(collection: Optional[Collection] = Depends(get_predictions_collection)):
+async def get_stats(
+    collection: Optional[Collection] = Depends(get_predictions_collection),
+    user_email: str = Depends(get_current_user_email),
+):
     """Aggregate stats for dashboard use."""
-    logger.info("get_stats_called")
+    logger.info("get_stats_called", user_email=user_email)
 
     source = []
     if collection is not None:
         try:
-            source = list(collection.find())
+            source = list(collection.find({"user_email": user_email}))
         except Exception as e:
             logger.error("database_stats_query_failed", error=str(e))
             raise HTTPException(status_code=500, detail=str(e))
     else:
-        source = _in_memory_history
+        source = [r for r in _in_memory_history if r.get("user_email") == user_email]
 
     total = len(source)
     by_class = {}
@@ -138,22 +156,29 @@ async def get_stats(collection: Optional[Collection] = Depends(get_predictions_c
 )
 async def download_pdf_report(
     record_id: str,
-    collection: Optional[Collection] = Depends(get_predictions_collection)
+    collection: Optional[Collection] = Depends(get_predictions_collection),
+    user_email: str = Depends(get_current_user_email),
 ):
     """Generate and download PDF report for a specific analysis."""
-    logger.info("download_pdf_called", record_id=record_id)
+    logger.info("download_pdf_called", record_id=record_id, user_email=user_email)
 
     # Fetch the record
     record = None
     if collection is not None:
         try:
-            record = collection.find_one({"_id": ObjectId(record_id)})
+            if ObjectId.is_valid(record_id):
+                record = collection.find_one({"_id": ObjectId(record_id), "user_email": user_email})
+            else:
+                record = collection.find_one({"id": record_id, "user_email": user_email})
         except Exception as e:
             logger.error("database_pdf_query_failed", error=str(e), record_id=record_id)
             raise HTTPException(status_code=500, detail="Database error")
     else:
         # In-memory fallback
-        record = next((r for r in _in_memory_history if r.get('_id') == record_id), None)
+        record = next(
+            (r for r in _in_memory_history if r.get('id') == record_id and r.get("user_email") == user_email),
+            None
+        )
 
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")

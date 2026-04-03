@@ -14,3 +14,18 @@ export const apiUrl = (path) => {
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
 })
+
+apiClient.interceptors.request.use((config) => {
+  try {
+    const rawUser = localStorage.getItem('agrosense_user')
+    if (!rawUser) return config
+
+    const user = JSON.parse(rawUser)
+    config.headers = config.headers || {}
+
+    if (user?.email) config.headers['X-User-Email'] = user.email
+    if (user?.name) config.headers['X-User-Name'] = user.name
+  } catch {}
+
+  return config
+})
