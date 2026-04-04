@@ -15,7 +15,7 @@ _model = None
 
 # ─── Disease Classes ───────────────────────────────────────────────────────────
 # Matches the PlantVillage dataset class ordering (38 classes subset shown below)
-DISEASE_CLASSES = [
+_FALLBACK_DISEASE_CLASSES = [
     "Apple___Apple_scab",
     "Apple___Black_rot",
     "Apple___Cedar_apple_rust",
@@ -55,6 +55,25 @@ DISEASE_CLASSES = [
     "Tomato___Tomato_mosaic_virus",
     "Tomato___healthy",
 ]
+
+
+def _load_disease_classes() -> list[str]:
+    """Load class order from class_indices.json saved during training."""
+    mapping_path = os.path.join(os.path.dirname(__file__), "class_indices.json")
+    try:
+        with open(mapping_path, "r", encoding="utf-8") as fh:
+            class_map = json.load(fh)
+        ordered = [label for _, label in sorted(class_map.items(), key=lambda kv: int(kv[0]))]
+        if ordered:
+            return ordered
+        print(f"class_indices.json at '{mapping_path}' is empty; using fallback classes.")
+    except Exception as exc:
+        print(f"Failed to load class indices from '{mapping_path}': {exc}")
+        print("Using fallback disease classes.")
+    return _FALLBACK_DISEASE_CLASSES
+
+
+DISEASE_CLASSES = _load_disease_classes()
 
 # Human-readable names
 DISPLAY_NAMES = {c: c.replace("___", " – ").replace("_", " ") for c in DISEASE_CLASSES}
