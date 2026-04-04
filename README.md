@@ -2,6 +2,11 @@
 
 A full-stack ML-powered crop disease detection system. Upload leaf and stem images to get instant disease classification, severity estimation, Color Deviation Index (CDI), and targeted treatment recommendations.
 
+![Home](assets/home1.png)
+![Diagnosis](assets/diagnosis.png)
+![Results](assets/result.png)
+![History](assets/history.png)
+
 ## ✨ Features
 
 - **Multi-Organ Analysis**: Simultaneous leaf & stem image analysis
