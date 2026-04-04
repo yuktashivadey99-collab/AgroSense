@@ -61,7 +61,7 @@ agrosense-ai/
 ⚙️ How to Run
 1. Clone Repository
 
-git clone https://github.com/your-username/AgroSense-AI.git
+git clone git clone https://github.com/yuktashivadey99-collab/AgroSense.git
 cd AgroSense-AI
 
 2. Setup Backend
