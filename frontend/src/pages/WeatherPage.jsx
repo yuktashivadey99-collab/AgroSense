@@ -12,6 +12,7 @@ const UI_TEXT = {
     title: 'Weather Intelligence',
     subtitle: 'Real-time weather data and crop disease risk assessment for better farming decisions.',
     searchLocation: 'Search location...', currentLocation: 'Use my location', loading: 'Loading weather data...',
+    refreshNow: 'Refresh now', lastUpdated: 'Last updated',
     highRisk: 'High Disease Risk', moderateRisk: 'Moderate Risk', lowRisk: 'Low Risk',
     temperature: 'Temperature', humidity: 'Humidity', windSpeed: 'Wind Speed', pressure: 'Pressure', visibility: 'Visibility',
     uvIndex: 'UV Index', sunrise: 'Sunrise', sunset: 'Sunset', feelsLike: 'Feels like', forecast: '7-Day Forecast',
@@ -30,6 +31,7 @@ const UI_TEXT = {
   hi: {
     badge: 'लाइव मौसम इंटेलिजेंस', title: 'मौसम जानकारी', subtitle: 'बेहतर कृषि निर्णयों के लिए रियल-टाइम मौसम डेटा और फसल रोग जोखिम आकलन।',
     searchLocation: 'स्थान खोजें...', currentLocation: 'मेरा स्थान उपयोग करें', loading: 'मौसम डेटा लोड हो रहा है...',
+    refreshNow: 'अभी रीफ्रेश करें', lastUpdated: 'आखिरी अपडेट',
     highRisk: 'उच्च रोग जोखिम', moderateRisk: 'मध्यम जोखिम', lowRisk: 'कम जोखिम',
     temperature: 'तापमान', humidity: 'नमी', windSpeed: 'हवा की गति', pressure: 'दबाव', visibility: 'दृश्यता',
     uvIndex: 'यूवी सूचकांक', sunrise: 'सूर्योदय', sunset: 'सूर्यास्त', feelsLike: 'अनुभव तापमान', forecast: '7-दिन का पूर्वानुमान',
@@ -48,6 +50,7 @@ const UI_TEXT = {
   mr: {
     badge: 'लाइव्ह हवामान इंटेलिजन्स', title: 'हवामान माहिती', subtitle: 'चांगल्या शेती निर्णयांसाठी रिअल-टाइम हवामान डेटा आणि पीक रोग जोखीम विश्लेषण.',
     searchLocation: 'स्थान शोधा...', currentLocation: 'माझे स्थान वापरा', loading: 'हवामान डेटा लोड होत आहे...',
+    refreshNow: 'आत्ता रीफ्रेश करा', lastUpdated: 'शेवटचे अपडेट',
     highRisk: 'उच्च रोग धोका', moderateRisk: 'मध्यम धोका', lowRisk: 'कमी धोका',
     temperature: 'तापमान', humidity: 'आर्द्रता', windSpeed: 'वाऱ्याचा वेग', pressure: 'दाब', visibility: 'दृश्यमानता',
     uvIndex: 'यूव्ही निर्देशांक', sunrise: 'सूर्योदय', sunset: 'सूर्यास्त', feelsLike: 'जाणवणारे तापमान', forecast: '7 दिवसांचा अंदाज',
@@ -66,6 +69,7 @@ const UI_TEXT = {
   te: {
     badge: 'లైవ్ వాతావరణ ఇంటెలిజెన్స్', title: 'వాతావరణ సమాచారం', subtitle: 'మెరుగైన వ్యవసాయ నిర్ణయాల కోసం రియల్-టైమ్ వాతావరణ డేటా మరియు పంట వ్యాధి ప్రమాద అంచనా.',
     searchLocation: 'స్థానం వెతకండి...', currentLocation: 'నా స్థానం ఉపయోగించండి', loading: 'వాతావరణ డేటా లోడ్ అవుతోంది...',
+    refreshNow: 'ఇప్పుడే రిఫ్రెష్ చేయండి', lastUpdated: 'చివరి అప్‌డేట్',
     highRisk: 'అధిక వ్యాధి ప్రమాదం', moderateRisk: 'మధ్యస్థ ప్రమాదం', lowRisk: 'తక్కువ ప్రమాదం',
     temperature: 'ఉష్ణోగ్రత', humidity: 'తేమ', windSpeed: 'గాలి వేగం', pressure: 'పీడనం', visibility: 'దృశ్యమానం',
     uvIndex: 'యూవీ సూచిక', sunrise: 'సూర్యోదయం', sunset: 'సూర్యాస్తమయం', feelsLike: 'అనిపించే ఉష్ణోగ్రత', forecast: '7 రోజుల అంచనా',
@@ -147,6 +151,7 @@ export default function WeatherPage({ lang = 'en' }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [geoLoading, setGeoLoading] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState(null)
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -161,8 +166,9 @@ export default function WeatherPage({ lang = 'en' }) {
     }
   }, [lang])
 
-  const fetchWeatherByCoords = async (lat, lon, name) => {
-    setLoading(true)
+  const fetchWeatherByCoords = async (lat, lon, name, options = {}) => {
+    const { silent = false } = options
+    if (!silent) setLoading(true)
     setError('')
     setGeoLoading(false)
     try {
@@ -171,12 +177,23 @@ export default function WeatherPage({ lang = 'en' }) {
       const data = await res.json()
       setWeather(data)
       setLocation({ name, lat, lon })
+      setLastUpdated(new Date())
     } catch {
       setError(t.failedFetch)
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!location) return undefined
+
+    const intervalId = window.setInterval(() => {
+      fetchWeatherByCoords(location.lat, location.lon, location.name, { silent: true })
+    }, 300000)
+
+    return () => window.clearInterval(intervalId)
+  }, [location])
 
   const searchLocation = async () => {
     if (!query.trim()) return
@@ -237,6 +254,14 @@ export default function WeatherPage({ lang = 'en' }) {
           <button onClick={() => navigator.geolocation?.getCurrentPosition((p) => fetchWeatherByCoords(p.coords.latitude, p.coords.longitude, t.currentLocation), () => {}, { timeout: 6000 })} className="btn-ghost px-4" title={t.currentLocation}>
             <MapPin size={15} />
           </button>
+          <button
+            onClick={() => location && fetchWeatherByCoords(location.lat, location.lon, location.name)}
+            className="btn-ghost px-4"
+            title={t.refreshNow}
+            disabled={!location || loading}
+          >
+            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+          </button>
         </motion.div>
 
         {error && (
@@ -263,6 +288,11 @@ export default function WeatherPage({ lang = 'en' }) {
                     <MapPin size={13} color="#38bdf8" />
                     <span className="text-sm font-500" style={{ color: '#7dd3fc', fontFamily: 'Inter' }}>{location?.name}</span>
                   </div>
+                  {lastUpdated && (
+                    <p className="mb-3 text-xs font-mono" style={{ color: '#3d5a47' }}>
+                      {t.lastUpdated} {new Intl.DateTimeFormat(lang === 'en' ? 'en-IN' : lang === 'hi' ? 'hi-IN' : lang === 'mr' ? 'mr-IN' : 'te-IN', { hour: '2-digit', minute: '2-digit' }).format(lastUpdated)}
+                    </p>
+                  )}
                   <div className="flex items-end gap-5 mb-4">
                     <span className="font-display" style={{ fontSize: 80, color: '#e8f5ee', lineHeight: 1, fontFamily: 'Outfit' }}>{Math.round(cur.temperature_2m)}°</span>
                     <div className="pb-2">

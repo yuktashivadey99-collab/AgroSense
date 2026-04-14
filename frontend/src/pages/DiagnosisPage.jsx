@@ -2,7 +2,7 @@
 import AuthModal from '../components/AuthModal'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Leaf, Layers, Send, Loader2, Cpu, RotateCcw, Scan, CheckCircle2 } from 'lucide-react'
+import { Leaf, Layers, Send, Loader2, Cpu, RotateCcw, Scan, CheckCircle2, Wifi, WifiOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 import ImageUpload from '../components/ImageUpload'
 import ResultCard from '../components/ResultCard'
@@ -39,13 +39,14 @@ const UI_TEXT = {
     cropLabel: 'Selected Crop', cropPlaceholder: 'Choose the crop before scanning',
     cropRequired: 'Select the crop first so the model does not guess the wrong plant.',
     analysisComplete: 'Analysis complete!', analysisFailed: 'Analysis failed. Make sure the backend is running.',
-    demoResult: 'Showing demo result (backend unavailable)',
     signInTitle: 'Sign In to Analyze',
     signInDesc: 'Crop diagnosis is available to signed-in users. Create a free account or sign in to access AI-powered disease detection.',
     signInButton: 'Sign In / Create Account',
     signInFootnote: 'All other features like Weather, History, and About remain freely accessible.',
     engineBadge: 'Multi-Organ Analysis Engine',
-    processingText: 'Processing your images through our AI pipeline...'
+    processingText: 'Processing your images through our AI pipeline...',
+    backendOnline: 'Backend live',
+    backendOffline: 'Backend offline',
   },
   hi: {
     title: 'फसल स्वास्थ्य', highlight: 'निदान',
@@ -58,13 +59,14 @@ const UI_TEXT = {
     cropLabel: 'चयनित फसल', cropPlaceholder: 'स्कैन से पहले फसल चुनें',
     cropRequired: 'पहले फसल चुनें ताकि मॉडल गलत पौधे का अनुमान न लगाए।',
     analysisComplete: 'विश्लेषण पूरा हुआ!', analysisFailed: 'विश्लेषण विफल। कृपया बैकएंड चल रहा है या नहीं जांचें।',
-    demoResult: 'डेमो परिणाम दिखाया जा रहा है (बैकएंड उपलब्ध नहीं है)',
     signInTitle: 'विश्लेषण के लिए साइन इन करें',
     signInDesc: 'फसल निदान केवल साइन-इन उपयोगकर्ताओं के लिए उपलब्ध है। एआई रोग पहचान का उपयोग करने के लिए मुफ्त खाता बनाएं या साइन इन करें।',
     signInButton: 'साइन इन / खाता बनाएं',
     signInFootnote: 'मौसम, इतिहास और अबाउट जैसी अन्य सुविधाएँ सभी के लिए उपलब्ध हैं।',
     engineBadge: 'मल्टी-ऑर्गन विश्लेषण इंजन',
-    processingText: 'आपकी छवियों को एआई पाइपलाइन में प्रोसेस किया जा रहा है...'
+    processingText: 'आपकी छवियों को एआई पाइपलाइन में प्रोसेस किया जा रहा है...',
+    backendOnline: 'बैकएंड लाइव',
+    backendOffline: 'बैकएंड ऑफलाइन',
   },
   mr: {
     title: 'पीक आरोग्य', highlight: 'निदान',
@@ -77,13 +79,14 @@ const UI_TEXT = {
     cropLabel: 'निवडलेले पीक', cropPlaceholder: 'स्कॅन करण्यापूर्वी पीक निवडा',
     cropRequired: 'मॉडेल चुकीचे पीक ओळखू नये म्हणून आधी पीक निवडा.',
     analysisComplete: 'विश्लेषण पूर्ण झाले!', analysisFailed: 'विश्लेषण अयशस्वी. कृपया बॅकएंड चालू आहे का ते तपासा.',
-    demoResult: 'डेमो निकाल दाखवला जात आहे (बॅकएंड उपलब्ध नाही)',
     signInTitle: 'विश्लेषणासाठी साइन इन करा',
     signInDesc: 'पीक निदान हे फक्त साइन-इन वापरकर्त्यांसाठी उपलब्ध आहे. एआय रोग ओळख वापरण्यासाठी मोफत खाते तयार करा किंवा साइन इन करा.',
     signInButton: 'साइन इन / खाते तयार करा',
     signInFootnote: 'हवामान, इतिहास आणि अबाउट यांसारखी इतर वैशिष्ट्ये सर्वांसाठी खुली आहेत.',
     engineBadge: 'मल्टी-ऑर्गन विश्लेषण इंजिन',
-    processingText: 'तुमच्या प्रतिमा एआय पाइपलाइनमधून प्रक्रिया केल्या जात आहेत...'
+    processingText: 'तुमच्या प्रतिमा एआय पाइपलाइनमधून प्रक्रिया केल्या जात आहेत...',
+    backendOnline: 'बॅकएंड लाईव्ह',
+    backendOffline: 'बॅकएंड ऑफलाइन',
   },
   te: {
     title: 'పంట ఆరోగ్యం', highlight: 'నిర్ధారణ',
@@ -96,88 +99,15 @@ const UI_TEXT = {
     cropLabel: 'ఎంచుకున్న పంట', cropPlaceholder: 'స్కాన్ చేయడానికి ముందు పంటను ఎంచుకోండి',
     cropRequired: 'మోడల్ తప్పు మొక్కను ఊహించకుండా ముందుగా పంటను ఎంచుకోండి.',
     analysisComplete: 'విశ్లేషణ పూర్తైంది!', analysisFailed: 'విశ్లేషణ విఫలమైంది. దయచేసి బ్యాక్‌ఎండ్ నడుస్తుందో చూడండి.',
-    demoResult: 'డెమో ఫలితం చూపబడుతోంది (బ్యాక్‌ఎండ్ అందుబాటులో లేదు)',
     signInTitle: 'విశ్లేషణ కోసం సైన్ ఇన్ చేయండి',
     signInDesc: 'పంట నిర్ధారణ సైన్-ఇన్ చేసిన వినియోగదారులకు మాత్రమే అందుబాటులో ఉంటుంది. ఉచిత ఖాతా సృష్టించండి లేదా సైన్ ఇన్ చేయండి.',
     signInButton: 'సైన్ ఇన్ / ఖాతా సృష్టించండి',
     signInFootnote: 'వాతావరణం, చరిత్ర మరియు అబౌట్ వంటి ఇతర ఫీచర్లు అందరికీ అందుబాటులో ఉంటాయి.',
     engineBadge: 'మల్టీ-ఆర్గన్ విశ్లేషణ ఇంజిన్',
-    processingText: 'మీ చిత్రాలు ఏఐ పైప్‌లైన్‌లో ప్రాసెస్ అవుతున్నాయి...'
+    processingText: 'మీ చిత్రాలు ఏఐ పైప్‌లైన్‌లో ప్రాసెస్ అవుతున్నాయి...',
+    backendOnline: 'బ్యాక్‌ఎండ్ లైవ్',
+    backendOffline: 'బ్యాక్‌ఎండ్ ఆఫ్‌లైన్',
   },
-}
-
-const DEMO_RESULTS = {
-  en: {
-    disease_name: 'Demo Analysis Result',
-    leafDisease: 'Leaf stress detected',
-    prevention: [
-      'Inspect the crop closely for early stress symptoms.',
-      'Avoid overwatering and improve field drainage if needed.',
-      'Monitor the next few days and re-run analysis when backend is available.',
-    ],
-    treatment: ['This is a temporary demo fallback while the live backend is unavailable.'],
-    fertilizer: ['Apply a balanced nutrient plan based on your field condition.'],
-    viability: 'This is a demo fallback result. Re-run the scan after the backend issue is fixed.',
-  },
-  hi: {
-    disease_name: 'डेमो विश्लेषण परिणाम',
-    leafDisease: 'पत्ती में तनाव पाया गया',
-    prevention: [
-      'तनाव के शुरुआती लक्षणों के लिए फसल को ध्यान से देखें।',
-      'अत्यधिक सिंचाई से बचें और जरूरत हो तो खेत की जलनिकासी सुधारें।',
-      'अगले कुछ दिनों तक निगरानी रखें और बैकएंड उपलब्ध होने पर फिर से विश्लेषण चलाएँ।',
-    ],
-    treatment: ['यह एक अस्थायी डेमो परिणाम है क्योंकि लाइव बैकएंड उपलब्ध नहीं है।'],
-    fertilizer: ['अपने खेत की स्थिति के अनुसार संतुलित पोषण योजना अपनाएँ।'],
-    viability: 'यह डेमो फॉलबैक परिणाम है। बैकएंड समस्या ठीक होने के बाद स्कैन फिर से चलाएँ।',
-  },
-  mr: {
-    disease_name: 'डेमो विश्लेषण निकाल',
-    leafDisease: 'पानात ताण आढळला',
-    prevention: [
-      'ताणाच्या सुरुवातीच्या लक्षणांसाठी पिकाची नीट तपासणी करा.',
-      'जास्त पाणी देणे टाळा आणि गरज असल्यास निचरा सुधारावा.',
-      'पुढील काही दिवस निरीक्षण करा आणि बॅकएंड उपलब्ध झाल्यावर पुन्हा विश्लेषण चालवा.',
-    ],
-    treatment: ['लाईव्ह बॅकएंड उपलब्ध नसल्यामुळे हा तात्पुरता डेमो निकाल आहे.'],
-    fertilizer: ['शेतीच्या स्थितीनुसार संतुलित पोषण योजना वापरा.'],
-    viability: 'हा डेमो फॉलबॅक निकाल आहे. बॅकएंड समस्या सुटल्यावर पुन्हा स्कॅन करा.',
-  },
-  te: {
-    disease_name: 'డెమో విశ్లేషణ ఫలితం',
-    leafDisease: 'ఆకులో ఒత్తిడి గుర్తించబడింది',
-    prevention: [
-      'మొదటి ఒత్తిడి లక్షణాల కోసం పంటను జాగ్రత్తగా పరిశీలించండి.',
-      'అధిక నీరు పోయడం మానుకుని అవసరమైతే కాలువలను మెరుగుపరచండి.',
-      'తదుపరి కొన్ని రోజులు గమనించి బ్యాక్‌ఎండ్ అందుబాటులోకి వచ్చినప్పుడు మళ్లీ విశ్లేషణ జరపండి.',
-    ],
-    treatment: ['లైవ్ బ్యాక్‌ఎండ్ అందుబాటులో లేకపోవడం వల్ల ఇది తాత్కాలిక డెమో ఫలితం.'],
-    fertilizer: ['మీ పొలం పరిస్థితికి సరిపోయే సమతుల్య పోషక ప్రణాళికను అమలు చేయండి.'],
-    viability: 'ఇది డెమో ఫాల్బ్యాక్ ఫలితం. బ్యాక్‌ఎండ్ సమస్య సరి అయిన తర్వాత మళ్లీ స్కాన్ చేయండి.',
-  },
-}
-
-const demoResult = (lang = 'en') => {
-  const copy = DEMO_RESULTS[lang] || DEMO_RESULTS.en
-
-  return {
-    id: `demo-${Date.now()}`,
-    disease_name: copy.disease_name,
-    classification: 'Preventive',
-    confidence: 0.82,
-    health_score: 74,
-    severity_score: 26,
-    cdi_score: 0.31,
-    leaf_result: {
-      disease: copy.leafDisease,
-      confidence: 0.82,
-    },
-    stem_result: null,
-    prevention: copy.prevention,
-    treatment: copy.treatment,
-    fertilizer: copy.fertilizer,
-    viability: copy.viability,
-  }
 }
 
 export default function DiagnosisPage({ lang = 'en' }) {
@@ -191,6 +121,7 @@ export default function DiagnosisPage({ lang = 'en' }) {
   const [result, setResult] = useState(null)
   const [step, setStep] = useState(0)
   const [selectedCrop, setSelectedCrop] = useState(null)
+  const [backendOnline, setBackendOnline] = useState(true)
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
@@ -202,6 +133,27 @@ export default function DiagnosisPage({ lang = 'en' }) {
         .join(' ')
       const matchedCrop = SUPPORTED_CROPS.find((item) => item.toLowerCase() === normalizedCrop.toLowerCase())
       setSelectedCrop(matchedCrop || normalizedCrop)
+    }
+  }, [])
+
+  useEffect(() => {
+    let mounted = true
+
+    const checkBackend = async () => {
+      try {
+        await apiClient.get('/health', { timeout: 5000 })
+        if (mounted) setBackendOnline(true)
+      } catch {
+        if (mounted) setBackendOnline(false)
+      }
+    }
+
+    checkBackend()
+    const intervalId = window.setInterval(checkBackend, 30000)
+
+    return () => {
+      mounted = false
+      window.clearInterval(intervalId)
     }
   }, [])
 
@@ -229,19 +181,15 @@ export default function DiagnosisPage({ lang = 'en' }) {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 30000,
       })
+      setBackendOnline(true)
       setResult(res.data)
       setStep(2)
       toast.success(t.analysisComplete)
     } catch (err) {
       const msg = err.response?.data?.error || err.response?.data?.detail || t.analysisFailed
+      setBackendOnline(false)
       toast.error(msg)
-      if (err.code === 'ERR_NETWORK' || err.response?.status >= 500) {
-        setResult(demoResult(lang))
-        setStep(2)
-        toast.success(t.demoResult)
-      } else {
-        setStep(0)
-      }
+      setStep(0)
     } finally {
       setLoading(false)
     }
@@ -310,6 +258,17 @@ export default function DiagnosisPage({ lang = 'en' }) {
           <div className="badge mb-6 mx-auto inline-flex" style={{ color: '#34d399', background: 'rgba(52,211,153,0.07)', border: '1px solid rgba(52,211,153,0.22)' }}>
             <Cpu size={11} color="#34d399" />
             {t.engineBadge}
+          </div>
+          <div
+            className="mb-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium"
+            style={{
+              color: backendOnline ? '#34d399' : '#f87171',
+              background: backendOnline ? 'rgba(52,211,153,0.08)' : 'rgba(248,113,113,0.08)',
+              border: backendOnline ? '1px solid rgba(52,211,153,0.18)' : '1px solid rgba(248,113,113,0.18)',
+            }}
+          >
+            {backendOnline ? <Wifi size={13} /> : <WifiOff size={13} />}
+            {backendOnline ? t.backendOnline : t.backendOffline}
           </div>
           <h1 className="font-display mb-4" style={{ fontSize: 'clamp(32px, 6vw, 56px)', color: '#e8f5ee' }}>
             {selectedCrop ? `${selectedCrop} ` : ''}
