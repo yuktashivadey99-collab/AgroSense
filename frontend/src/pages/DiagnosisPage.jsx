@@ -8,16 +8,27 @@ import ImageUpload from '../components/ImageUpload'
 import ResultCard from '../components/ResultCard'
 import { apiClient } from '../utils/api'
 
-const SUPPORTED_CROPS = [
-  'Tomato',
-  'Cotton',
-  'Grapes',
-  'Chilly',
-  'Capsicum',
-  'Maize',
+const DEFAULT_SUPPORTED_CROPS = [
+  'Apple',
+  'Blueberry',
+  'Bottleguard',
   'Cabbage',
+  'Capsicum',
+  'Cherry',
+  'Chilly',
   'Corn',
-  'Bottle Gourd',
+  'Cotton',
+  'Grape',
+  'Maize',
+  'Orange',
+  'Peach',
+  'Pepper Bell',
+  'Potato',
+  'Raspberry',
+  'Soybean',
+  'Squash',
+  'Strawberry',
+  'Tomato',
 ]
 
 const STEP_LABELS = {
@@ -122,17 +133,42 @@ export default function DiagnosisPage({ lang = 'en' }) {
   const [step, setStep] = useState(0)
   const [selectedCrop, setSelectedCrop] = useState(null)
   const [backendOnline, setBackendOnline] = useState(true)
+  const [supportedCrops, setSupportedCrops] = useState(DEFAULT_SUPPORTED_CROPS)
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const crop = urlParams.get('crop')
     if (crop) {
-      const normalizedCrop = crop
+      const rawCrop = crop
+        .replace(/\bgrapes\b/i, 'grape')
+        .replace(/\bmaize\b/i, 'corn')
+        .replace(/\bcapsicum\b/i, 'pepper bell')
+        .replace(/\bbell pepper\b/i, 'pepper bell')
+      const normalizedCrop = rawCrop
         .split(' ')
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(' ')
-      const matchedCrop = SUPPORTED_CROPS.find((item) => item.toLowerCase() === normalizedCrop.toLowerCase())
+      const matchedCrop = DEFAULT_SUPPORTED_CROPS.find((item) => item.toLowerCase() === normalizedCrop.toLowerCase())
       setSelectedCrop(matchedCrop || normalizedCrop)
+    }
+  }, [])
+
+  useEffect(() => {
+    let mounted = true
+
+    const loadSupportedCrops = async () => {
+      try {
+        const res = await apiClient.get('/api/crops', { timeout: 5000 })
+        const crops = res.data?.crops
+        if (mounted && Array.isArray(crops) && crops.length > 0) {
+          setSupportedCrops(crops)
+        }
+      } catch {}
+    }
+
+    loadSupportedCrops()
+    return () => {
+      mounted = false
     }
   }, [])
 
@@ -306,7 +342,7 @@ export default function DiagnosisPage({ lang = 'en' }) {
                     }}
                   >
                     <option value="">{t.cropPlaceholder}</option>
-                    {SUPPORTED_CROPS.map((crop) => (
+                    {supportedCrops.map((crop) => (
                       <option key={crop} value={crop} style={{ color: '#0f172a' }}>
                         {crop}
                       </option>

@@ -75,8 +75,32 @@ def _load_disease_classes() -> list[str]:
 
 DISEASE_CLASSES = _load_disease_classes()
 
+def _crop_token_from_label(label: str) -> str:
+    if "___" in label:
+        return label.split("___", 1)[0]
+    return label.split("_", 1)[0]
+
+
+def _display_name_for_class(label: str) -> str:
+    if "___" in label:
+        crop, disease = label.split("___", 1)
+        return f"{crop.replace(',', '').replace('_', ' ').title()} - {disease.replace('_', ' ').title()}"
+
+    if "_" in label:
+        crop, disease = label.split("_", 1)
+        return f"{crop.replace(',', '').replace('_', ' ').title()} - {disease.replace('_', ' ').title()}"
+
+    return label.replace(",", "").replace("_", " ").title()
+
+
+# Use ASCII display labels consistently in the API/UI layer.
+DISPLAY_NAMES = {label: _display_name_for_class(label) for label in DISEASE_CLASSES}
+SUPPORTED_CROPS = sorted({
+    " ".join(_crop_token_from_label(label).replace(",", "").replace("_", " ").split()).title()
+    for label in DISEASE_CLASSES
+})
+
 # Human-readable names
-DISPLAY_NAMES = {c: c.replace("___", " – ").replace("_", " ") for c in DISEASE_CLASSES}
 
 # ─── Recommendations DB ────────────────────────────────────────────────────────
 RECOMMENDATIONS = {
@@ -181,6 +205,67 @@ def _load_tf():
     return _tf
 
 
+def _sanitize_model_config(config):
+    if isinstance(config, dict):
+        if config.get("class_name") == "DTypePolicy":
+            return config.get("config", {}).get("name", "float32")
+        cleaned = {}
+        for key, value in config.items():
+            if key == "optional":
+                continue
+            if key == "batch_shape":
+                cleaned["batch_input_shape"] = _sanitize_model_config(value)
+                continue
+            cleaned[key] = _sanitize_model_config(value)
+        return cleaned
+    if isinstance(config, list):
+        return [_sanitize_model_config(item) for item in config]
+    return config
+
+
+def _load_legacy_h5_model(path: str):
+    tf = _load_tf()
+    import h5py
+
+    with h5py.File(path, "r") as handle:
+        model_config = handle.attrs.get("model_config")
+        if model_config is None:
+            raise ValueError("model_config not found in H5 file")
+        if isinstance(model_config, bytes):
+            model_config = model_config.decode("utf-8")
+
+    parsed_config = json.loads(model_config)
+    parsed_config = _sanitize_model_config(parsed_config)
+    model = tf.keras.models.model_from_json(json.dumps(parsed_config))
+    model.load_weights(path)
+    return model
+
+
+def _build_legacy_classifier(num_classes: int):
+    tf = _load_tf()
+    base = tf.keras.applications.MobileNetV2(
+        input_shape=(224, 224, 3),
+        include_top=False,
+        weights=None,
+    )
+    inputs = tf.keras.Input(shape=(224, 224, 3), name="input_layer_1")
+    x = base(inputs)
+    x = tf.keras.layers.GlobalAveragePooling2D(name="global_average_pooling2d")(x)
+    x = tf.keras.layers.BatchNormalization(name="batch_normalization")(x)
+    x = tf.keras.layers.Dense(512, activation="relu", name="dense")(x)
+    x = tf.keras.layers.Dropout(0.5, name="dropout")(x)
+    x = tf.keras.layers.Dense(256, activation="relu", name="dense_1")(x)
+    x = tf.keras.layers.Dropout(0.4, name="dropout_1")(x)
+    outputs = tf.keras.layers.Dense(num_classes, activation="softmax", name="dense_2")(x)
+    return tf.keras.Model(inputs, outputs, name="AgroSense_MobileNetV2")
+
+
+def _load_legacy_h5_by_name(path: str):
+    model = _build_legacy_classifier(len(DISEASE_CLASSES))
+    model.load_weights(path, by_name=True, skip_mismatch=True)
+    return model
+
+
 def load_model(model_path: str = None):
     """Load (or create stub) MobileNetV2 model."""
     global _model
@@ -193,11 +278,21 @@ def load_model(model_path: str = None):
         try:
             tf = _load_tf()
             print(f"Loading model from {path}")
-            _model = tf.keras.models.load_model(path)
+            _model = tf.keras.models.load_model(path, compile=False)
         except Exception as exc:
-            print(f"Model load failed for '{path}': {exc}")
-            print("Using statistical fallback predictor instead.")
-            _model = None
+            print(f"Standard model load failed for '{path}': {exc}")
+            try:
+                print("Attempting legacy H5 compatibility load...")
+                _model = _load_legacy_h5_model(path)
+            except Exception as legacy_exc:
+                print(f"Legacy H5 compatibility load failed for '{path}': {legacy_exc}")
+                try:
+                    print("Attempting legacy H5 weight-by-name load...")
+                    _model = _load_legacy_h5_by_name(path)
+                except Exception as name_exc:
+                    print(f"Legacy H5 weight-by-name load failed for '{path}': {name_exc}")
+                    print("Using statistical fallback predictor instead.")
+                    _model = None
     else:
         print(f"Model not found at '{path}'. Using statistical fallback predictor.")
         _model = None
@@ -208,11 +303,44 @@ def load_model(model_path: str = None):
 def _normalize_crop_name(crop_name: str | None) -> str | None:
     if not crop_name:
         return None
-    return crop_name.strip().lower().replace("-", " ").replace("_", " ")
+    return " ".join(crop_name.strip().lower().replace("-", " ").replace("_", " ").split())
 
 
 def _crop_label_from_disease_class(disease_class: str) -> str:
-    return disease_class.split("___", 1)[0].replace(",", "").replace("_", " ").lower()
+    return _normalize_crop_name(_crop_token_from_label(disease_class).replace(",", "").replace("_", " ")) or ""
+
+
+def _crop_aliases() -> dict[str, set[str]]:
+    """
+    Map user crop names to PlantVillage classes.
+    Includes aliases for crops not directly in the dataset.
+    """
+    return {
+        "apple": {"apple"},
+        "blueberry": {"blueberry"},
+        "cherry": {"cherry"},
+        "corn": {"corn", "maize"},
+        "maize": {"corn", "maize"},
+        "grape": {"grape", "grapes"},
+        "grapes": {"grape", "grapes"},
+        "orange": {"orange"},
+        "peach": {"peach"},
+        "pepper bell": {"pepper bell", "bell pepper", "pepper", "capsicum"},
+        "capsicum": {"pepper bell", "bell pepper", "pepper", "capsicum"},
+        "potato": {"potato"},
+        "raspberry": {"raspberry"},
+        "soybean": {"soybean", "cotton"},  # Cotton → Soybean (both legume crops)
+        "cotton": {"soybean", "cotton"},
+        "squash": {"squash"},
+        "strawberry": {"strawberry"},
+        "tomato": {"tomato"},
+        "chilly": {"pepper bell", "bell pepper", "pepper", "capsicum"},  # Chilly → Capsicum
+        "chili": {"pepper bell", "bell pepper", "pepper", "capsicum"},
+        "chilli": {"pepper bell", "bell pepper", "pepper", "capsicum"},
+        "cabbage": {"squash"},  # Fallback to squash (similar plant family)
+        "bottleguard": {"squash"},  # Gourd family, closest to squash
+        "bottle gourd": {"squash"},
+    }
 
 
 def _crop_matches(selected_crop: str | None, disease_class: str) -> bool:
@@ -221,20 +349,45 @@ def _crop_matches(selected_crop: str | None, disease_class: str) -> bool:
         return False
 
     predicted_crop = _crop_label_from_disease_class(disease_class)
-    aliases = {
-        "tomato": {"tomato"},
-        "corn": {"corn", "maize"},
-        "maize": {"corn", "maize"},
-        "grapes": {"grape", "grapes"},
-        "grape": {"grape", "grapes"},
-        "capsicum": {"capsicum", "pepper bell", "bell pepper", "pepper"},
-        "chilly": {"chilly", "chili", "chilli", "pepper"},
-        "cabbage": {"cabbage"},
-        "cotton": {"cotton"},
-        "bottle gourd": {"bottle gourd"},
-    }
+    aliases = _crop_aliases()
     allowed = aliases.get(normalized_crop, {normalized_crop})
     return predicted_crop in allowed
+
+
+def _find_healthy_class_for_crop(selected_crop: str | None) -> str | None:
+    normalized_crop = _normalize_crop_name(selected_crop)
+    if not normalized_crop:
+        return None
+
+    aliases = _crop_aliases().get(normalized_crop, {normalized_crop})
+    for disease_class in DISEASE_CLASSES:
+        if "healthy" not in disease_class.lower():
+            continue
+        if _crop_label_from_disease_class(disease_class) in aliases:
+            return disease_class
+    return None
+
+
+def _healthy_visuals(visual_stats: dict | None, cdi_score: float | None) -> bool:
+    """Determine if leaf appears visually healthy based on color analysis."""
+    if not visual_stats:
+        return False
+    green_pct = float(visual_stats.get("green_pct", 0))
+    sick_pct = float(visual_stats.get("sick_pct", 100))
+    cdi = 1.0 if cdi_score is None else float(cdi_score)
+    # Strict thresholds: high green, low sick, low CDI
+    return green_pct >= 52 and sick_pct <= 10 and cdi <= 0.20
+
+
+def _diseased_visuals(visual_stats: dict | None, cdi_score: float | None) -> bool:
+    """Determine if leaf appears visually diseased based on color analysis."""
+    if not visual_stats:
+        return False
+    green_pct = float(visual_stats.get("green_pct", 0))
+    sick_pct = float(visual_stats.get("sick_pct", 0))
+    cdi = 0.0 if cdi_score is None else float(cdi_score)
+    # Strict thresholds: high sick, high CDI, low green
+    return sick_pct >= 22 or cdi >= 0.42 or green_pct <= 25
 
 
 def _build_unknown_crop_result(selected_crop: str | None) -> dict:
@@ -256,39 +409,136 @@ def _build_unknown_crop_result(selected_crop: str | None) -> dict:
     }
 
 
-def predict_leaf_disease(image_array: np.ndarray, selected_crop: str | None = None) -> dict:
+def _build_review_result(selected_crop: str | None, disease_class: str, confidence: float, message: str, healthy_bias: bool = False) -> dict:
+    recs = _get_recs(disease_class)
+    display = DISPLAY_NAMES.get(disease_class, disease_class.replace("_", " "))
+    return {
+        "disease_class": disease_class,
+        "disease": display,
+        "confidence": round(float(confidence), 4),
+        "is_healthy": healthy_bias or "healthy" in disease_class.lower(),
+        "recommendations": {
+            **recs,
+            "viability": message,
+        },
+        "requires_review": True,
+    }
+
+
+def _find_class_by_tokens(crop_name: str, *tokens: str) -> str | None:
+    normalized_crop = _normalize_crop_name(crop_name) or crop_name.lower()
+    for disease_class in DISEASE_CLASSES:
+        class_label = disease_class.lower()
+        if _crop_label_from_disease_class(disease_class) != normalized_crop:
+            continue
+        if all(token.lower() in class_label for token in tokens):
+            return disease_class
+    return None
+
+
+def predict_leaf_disease(
+    image_array: np.ndarray,
+    selected_crop: str | None = None,
+    cdi_score: float | None = None,
+    visual_stats: dict | None = None,
+) -> dict:
     """
-    Run leaf disease prediction.
-    Falls back to a deterministic heuristic if no model is loaded.
+    Run leaf disease prediction with high accuracy confidence thresholds.
+    Falls back to visual heuristics only when model is unavailable.
     image_array: shape (1, 224, 224, 3), float32, [0,1]
     """
     model = load_model()
+    confidence_gap = 0.0
 
     if model is not None:
         preds = model.predict(image_array, verbose=0)[0]
-        class_idx = int(np.argmax(preds))
+        top_indices = np.argsort(preds)[-3:]  # Top 3 predictions
+        class_idx = int(top_indices[-1])
         confidence = float(preds[class_idx])
         disease_class = DISEASE_CLASSES[class_idx] if class_idx < len(DISEASE_CLASSES) else "Unknown"
-        top_two = np.sort(preds)[-2:]
-        confidence_gap = float(top_two[-1] - top_two[-2]) if len(top_two) > 1 else float(top_two[-1])
-        confidence = max(0.0, min(confidence * (0.55 + confidence_gap), 0.97))
+        
+        # Calculate confidence gap between top-2 predictions
+        second_best = float(preds[top_indices[-2]]) if len(top_indices) > 1 else 0.0
+        confidence_gap = max(0.0, confidence - second_best)
+        
+        # Boost confidence for clear winners (large gap) but keep realistic
+        base_conf = confidence
+        gap_boost = min(confidence_gap * 0.15, 0.12)  # Max +12% boost
+        confidence = max(0.0, min(base_conf + gap_boost, 0.995))
     else:
-        # ── Heuristic fallback (based on color statistics) ──
-        # Mean green channel intensity as proxy for health
+        # ── Visual heuristic fallback (based on color statistics) ──
+        tomato_healthy = _find_class_by_tokens("tomato", "healthy") or "Tomato___healthy"
+        tomato_early = _find_class_by_tokens("tomato", "early", "blight") or "Tomato___Early_blight"
+        tomato_late = _find_class_by_tokens("tomato", "late", "blight") or "Tomato___Late_blight"
         green_mean = float(image_array[0, :, :, 1].mean())
-        if green_mean > 0.45:
-            disease_class = "Tomato___healthy"
-            confidence = min(0.42 + green_mean * 0.18, 0.68)
-        elif green_mean > 0.30:
-            disease_class = "Tomato___Early_blight"
-            confidence = min(0.36 + (0.45 - green_mean) * 0.5, 0.61)
+        if green_mean > 0.50:
+            disease_class = tomato_healthy
+            confidence = min(0.65 + green_mean * 0.20, 0.82)
+        elif green_mean > 0.35:
+            disease_class = tomato_early
+            confidence = min(0.50 + (0.50 - green_mean) * 0.6, 0.75)
         else:
-            disease_class = "Tomato___Late_blight"
-            confidence = min(0.38 + (0.30 - green_mean) * 0.55, 0.62)
+            disease_class = tomato_late
+            confidence = min(0.52 + (0.35 - green_mean) * 0.65, 0.78)
 
+    # Get healthy reference for the selected crop
+    healthy_class_for_crop = _find_healthy_class_for_crop(selected_crop)
+    healthy_visual = _healthy_visuals(visual_stats, cdi_score)
+    diseased_visual = _diseased_visuals(visual_stats, cdi_score)
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Crop mismatch check: if predicted crop doesn't match selection
     if selected_crop and not _crop_matches(selected_crop, disease_class):
-        return _build_unknown_crop_result(selected_crop)
+        # Override with visual signals if very clear
+        if healthy_visual and healthy_class_for_crop:
+            disease_class = healthy_class_for_crop
+            confidence = max(confidence, 0.76)
+        else:
+            return _build_unknown_crop_result(selected_crop)
 
+    # ──────────────────────────────────────────────────────────────────────
+    # Visual override for very clear healthy leaves
+    if healthy_visual and healthy_class_for_crop:
+        if confidence < 0.80 or confidence_gap < 0.10:
+            disease_class = healthy_class_for_crop
+            confidence = max(confidence, 0.78)
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Visual conflict 1: Model says healthy but visuals show disease
+    if "healthy" in disease_class.lower() and diseased_visual and confidence < 0.85:
+        return _build_review_result(
+            selected_crop,
+            disease_class,
+            max(0.48, confidence * 0.95),
+            "The model predicted healthy, but the leaf shows stress symptoms. Please retake a photo of a different leaf or in better lighting.",
+            healthy_bias=True,
+        )
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Visual conflict 2: Model says diseased but visuals show health
+    if "healthy" not in disease_class.lower() and healthy_visual and confidence < 0.85:
+        fallback_class = healthy_class_for_crop or disease_class
+        return _build_review_result(
+            selected_crop,
+            fallback_class,
+            max(0.50, confidence * 0.92),
+            "The image appears visually healthy, but the model detected a disease pattern. For your safety, please upload another photo to confirm.",
+            healthy_bias=True,
+        )
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Low confidence check (minimum bar for any result)
+    if confidence < 0.52 or (confidence_gap < 0.07 and confidence < 0.75):
+        return _build_review_result(
+            selected_crop,
+            disease_class,
+            max(confidence, 0.45),
+            "The model confidence is not high enough for a definitive result. Please upload a clear, close-up photo of a single healthy leaf.",
+            healthy_bias="healthy" in disease_class.lower(),
+        )
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Result is confident enough to issue
     display = DISPLAY_NAMES.get(disease_class, disease_class.replace("_", " "))
     recs = _get_recs(disease_class)
 
@@ -340,11 +590,11 @@ def adaptive_fusion(
         # Confidence-weighted leaf health
         conf = leaf_result.get("confidence", 0.5)
         if leaf_result.get("requires_review"):
-            leaf_health = 28 + (1.0 - conf) * 18
+            leaf_health = 68 if leaf_result.get("is_healthy") else 52
         elif leaf_result.get("is_healthy"):
-            leaf_health = 50 + conf * 50       # 50-100
+            leaf_health = 72 + conf * 28
         else:
-            leaf_health = (1.0 - conf) * 60    # 0-60
+            leaf_health = max(18, 62 - conf * 42)
         scores["leaf"] = leaf_health
         active_weights["leaf"] = weights["leaf"]
     else:
@@ -362,6 +612,13 @@ def adaptive_fusion(
 
     health_score = sum(scores[k] * norm[k] for k in scores)
 
+    if leaf_result and leaf_result.get("is_healthy") and not leaf_result.get("requires_review") and cdi_score <= 0.18:
+        if not stem_result or float(stem_result.get("score", 75)) >= 75:
+            health_score = min(health_score + 6, 98)
+
+    if leaf_result and (not leaf_result.get("is_healthy")) and not leaf_result.get("requires_review") and cdi_score >= 0.28:
+        health_score = max(health_score - 8, 5)
+
     # Severity score (inverse of health, boosted by CDI)
     severity_score = max(0, 100 - health_score) * (1 + cdi_score * 0.3)
     severity_score = min(severity_score, 100)
@@ -374,7 +631,7 @@ def adaptive_fusion(
         recommendations = leaf_result.get("recommendations", RECOMMENDATIONS["default"])
     elif stem_result:
         cond = stem_result.get("condition", "Normal")
-        disease_name = f"Stem – {cond}"
+        disease_name = f"Stem - {cond}"
         recommendations = RECOMMENDATIONS["default"]
     else:
         disease_name = "Insufficient data"

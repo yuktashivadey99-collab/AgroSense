@@ -15,8 +15,9 @@ from utils.image_processing import (
     preprocess_for_model,
     calculate_cdi,
     analyze_stem,
+    green_vs_brown_ratio,
 )
-from models.ml_model import predict_leaf_disease, adaptive_fusion
+from models.ml_model import predict_leaf_disease, adaptive_fusion, SUPPORTED_CROPS
 from dependencies import get_predictions_collection, get_logger, get_current_user_email
 
 router = APIRouter()
@@ -24,6 +25,12 @@ logger = get_logger()
 
 # In-memory fallback history when MongoDB is not configured
 _in_memory_history = []
+
+
+@router.get("/crops")
+async def get_supported_crops():
+    """Return the crop labels supported by the currently installed model metadata."""
+    return {"crops": SUPPORTED_CROPS}
 
 
 @router.post(
@@ -66,6 +73,7 @@ async def analyze(
     leaf_result = None
     stem_result = None
     cdi_score = 0.0
+    visual_stats = None
 
     # Process leaf image
     if leaf_image:
@@ -74,7 +82,13 @@ async def analyze(
             leaf_img = load_image_from_bytes(leaf_bytes)
             leaf_arr = preprocess_for_model(leaf_img)
             cdi_score = calculate_cdi(leaf_img)
-            leaf_result = predict_leaf_disease(leaf_arr, selected_crop=normalized_crop_name)
+            visual_stats = green_vs_brown_ratio(leaf_img)
+            leaf_result = predict_leaf_disease(
+                leaf_arr,
+                selected_crop=normalized_crop_name,
+                cdi_score=cdi_score,
+                visual_stats=visual_stats,
+            )
             logger.info("leaf_analysis_completed", disease=leaf_result.get("disease"))
         except Exception as e:
             logger.error("leaf_image_processing_failed", error=str(e))

@@ -13,7 +13,7 @@ const UI_TEXT = {
     platform: 'AgroSense AI Platform',
     heroTitle1: 'See What Is', heroTitle2: 'Hurting', heroTitle3: 'Your Crops.',
     heroDesc: 'Upload leaf and stem images to detect disease, estimate severity, and get treatment guidance in seconds.',
-    analyzeBtn: 'Analyse My Crops', accuracy: 'Accuracy', trainingImages: 'Training Images', processing: 'Processing', analyzingLeaf: 'Analyzing Leaf...', alert: 'Alert', earlyBlight: 'Early Blight Detected',
+    analyzeBtn: 'Analyse My Crops', processing: 'Processing', analyzingLeaf: 'Analyzing Leaf...',
     sectionLabel: 'Platform Features', sectionTitle: 'About', sectionAccent: 'AgroSense AI',
     cropsTitle: 'Crops', cropsAccent: 'Supported', howTitle: 'How It', howAccent: 'Works', classTitle: 'Five-Level', classAccent: 'Health Classification',
     footerTag: 'Intelligent Crop Health Platform', copyright: '© 2026 AgroSense AI · All rights reserved', analyzeCrop: 'Analyze',
@@ -37,13 +37,13 @@ const UI_TEXT = {
       { key: 'Critical', desc: 'Urgent attention required' },
       { key: 'Remove', desc: 'Remove the plant to protect nearby crops' },
     ],
-    crops: ['Tomato', 'Cotton', 'Grapes', 'Chilly', 'Capsicum', 'Maize', 'Cabbage', 'Corn', 'Bottle Gourd'],
+    crops: ['Tomato', 'Grapes', 'Capsicum', 'Corn'],
   },
   hi: {
     platform: 'एग्रोसेंस एआई प्लेटफ़ॉर्म',
     heroTitle1: 'देखें क्या', heroTitle2: 'नुकसान पहुँचा रहा है', heroTitle3: 'आपकी फसल को।',
     heroDesc: 'पत्ती और तना छवियाँ अपलोड करें, रोग पहचानें, गंभीरता मापें और कुछ ही सेकंड में उपचार सुझाव पाएँ।',
-    analyzeBtn: 'मेरी फसल का विश्लेषण करें', accuracy: 'सटीकता', trainingImages: 'प्रशिक्षण छवियाँ', processing: 'प्रोसेसिंग', analyzingLeaf: 'पत्ती का विश्लेषण...', alert: 'अलर्ट', earlyBlight: 'अर्ली ब्लाइट पाया गया',
+    analyzeBtn: 'मेरी फसल का विश्लेषण करें', processing: 'प्रोसेसिंग', analyzingLeaf: 'पत्ती का विश्लेषण...',
     sectionLabel: 'प्लेटफ़ॉर्म विशेषताएँ', sectionTitle: 'एग्रोसेंस एआई', sectionAccent: 'के बारे में',
     cropsTitle: 'समर्थित', cropsAccent: 'फसलें', howTitle: 'यह कैसे', howAccent: 'काम करता है', classTitle: 'पाँच-स्तरीय', classAccent: 'स्वास्थ्य वर्गीकरण',
     footerTag: 'स्मार्ट फसल स्वास्थ्य प्लेटफ़ॉर्म', copyright: '© 2026 AgroSense AI · सर्वाधिकार सुरक्षित', analyzeCrop: 'विश्लेषण करें',
@@ -67,13 +67,13 @@ const UI_TEXT = {
       { key: 'Critical', desc: 'तुरंत ध्यान आवश्यक' },
       { key: 'Remove', desc: 'पास की फसलों की रक्षा के लिए पौधा हटाएँ' },
     ],
-    crops: ['टमाटर', 'कपास', 'अंगूर', 'मिर्च', 'शिमला मिर्च', 'मक्का', 'पत्तागोभी', 'कॉर्न', 'लौकी'],
+    crops: ['टमाटर', 'अंगूर', 'शिमला मिर्च', 'कॉर्न'],
   },
   mr: {
     platform: 'AgroSense AI प्लॅटफॉर्म',
     heroTitle1: 'तुमच्या पिकाला', heroTitle2: 'काय त्रास देत आहे', heroTitle3: 'ते पाहा.',
     heroDesc: 'पान आणि खोड प्रतिमा अपलोड करा, रोग ओळखा, तीव्रता मोजा आणि काही सेकंदांत उपचार सूचना मिळवा.',
-    analyzeBtn: 'माझ्या पिकाचे विश्लेषण करा', accuracy: 'अचूकता', trainingImages: 'प्रशिक्षण प्रतिमा', processing: 'प्रक्रिया', analyzingLeaf: 'पानाचे विश्लेषण...', alert: 'अलर्ट', earlyBlight: 'अर्ली ब्लाइट आढळला',
+    analyzeBtn: 'माझ्या पिकाचे विश्लेषण करा', processing: 'प्रक्रिया', analyzingLeaf: 'पानाचे विश्लेषण...',
     sectionLabel: 'प्लॅटफॉर्म वैशिष्ट्ये', sectionTitle: 'AgroSense AI', sectionAccent: 'विषयी',
     cropsTitle: 'समर्थित', cropsAccent: 'पिके', howTitle: 'हे कसे', howAccent: 'काम करते', classTitle: 'पाच-स्तरीय', classAccent: 'आरोग्य वर्गीकरण',
     footerTag: 'स्मार्ट पीक आरोग्य प्लॅटफॉर्म', copyright: '© 2026 AgroSense AI · सर्व हक्क राखीव', analyzeCrop: 'विश्लेषण करा',
@@ -97,13 +97,13 @@ const UI_TEXT = {
       { key: 'Critical', desc: 'त्वरित लक्ष आवश्यक' },
       { key: 'Remove', desc: 'शेजारच्या पिकांचे संरक्षण करण्यासाठी झाड काढा' },
     ],
-    crops: ['टोमॅटो', 'कापूस', 'द्राक्षे', 'मिरची', 'ढोबळी मिरची', 'मका', 'कोबी', 'कॉर्न', 'दुधी भोपळा'],
+    crops: ['टोमॅटो', 'द्राक्षे', 'ढोबळी मिरची', 'कॉर्न'],
   },
   te: {
     platform: 'AgroSense AI ప్లాట్‌ఫారం',
     heroTitle1: 'మీ పంటకు', heroTitle2: 'ఏం నష్టం కలిగిస్తోంది', heroTitle3: 'అది చూడండి.',
     heroDesc: 'ఆకు మరియు కాండం చిత్రాలను అప్‌లోడ్ చేసి వ్యాధిని గుర్తించండి, తీవ్రత అంచనా వేయండి, కొన్ని సెకండ్లలో చికిత్స సూచనలు పొందండి.',
-    analyzeBtn: 'నా పంటను విశ్లేషించండి', accuracy: 'ఖచ్చితత్వం', trainingImages: 'శిక్షణ చిత్రాలు', processing: 'ప్రాసెసింగ్', analyzingLeaf: 'ఆకు విశ్లేషణ...', alert: 'అలర్ట్', earlyBlight: 'ఎర్లీ బ్లైట్ గుర్తించబడింది',
+    analyzeBtn: 'నా పంటను విశ్లేషించండి', processing: 'ప్రాసెసింగ్', analyzingLeaf: 'ఆకు విశ్లేషణ...',
     sectionLabel: 'ప్లాట్‌ఫారం లక్షణాలు', sectionTitle: 'AgroSense AI', sectionAccent: 'గురించి',
     cropsTitle: 'మద్దతు ఉన్న', cropsAccent: 'పంటలు', howTitle: 'ఇది ఎలా', howAccent: 'పనిచేస్తుంది', classTitle: 'ఐదు-స్థాయి', classAccent: 'ఆరోగ్య వర్గీకరణ',
     footerTag: 'స్మార్ట్ పంట ఆరోగ్య ప్లాట్‌ఫారం', copyright: '© 2026 AgroSense AI · అన్ని హక్కులు రిజర్వు', analyzeCrop: 'విశ్లేషించండి',
@@ -127,7 +127,7 @@ const UI_TEXT = {
       { key: 'Critical', desc: 'తక్షణ శ్రద్ధ అవసరం' },
       { key: 'Remove', desc: 'పక్క పంటలను కాపాడటానికి మొక్కను తొలగించండి' },
     ],
-    crops: ['టమోటా', 'పత్తి', 'ద్రాక్ష', 'మిర్చి', 'క్యాప్సికం', 'మొక్కజొన్న', 'క్యాబేజీ', 'కార్న్', 'సొరకాయ'],
+    crops: ['టమోటా', 'ద్రాక్ష', 'క్యాప్సికం', 'కార్న్'],
   },
 }
 
@@ -142,14 +142,9 @@ const featureMeta = [
 
 const cropImages = [
   { slug: 'tomato', img: '/crops/tomato.png' },
-  { slug: 'cotton', img: '/crops/cotton.png' },
   { slug: 'grapes', img: '/crops/grapes.png' },
-  { slug: 'chilly', img: '/crops/chilly.png' },
   { slug: 'capsicum', img: '/crops/capsicum.png' },
-  { slug: 'maize', img: '/crops/maize.png' },
-  { slug: 'cabbage', img: '/crops/cabbage.jpg?v=2' },
   { slug: 'corn', img: '/crops/corn.jpg?v=2' },
-  { slug: 'bottle-gourd', img: '/crops/bottle_guard.png' },
 ]
 
 const classColors = {
@@ -216,16 +211,6 @@ export default function LandingPage({ lang = 'en' }) {
               <ArrowRight size={15} color="#011a0e" className="group-hover:translate-x-1 transition-transform" />
             </motion.button>
 
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1, delay: 0.5 }} className="mt-10 flex gap-6">
-              <div>
-                <div className="font-display text-2xl text-glow-sky">97.3%</div>
-                <div className="text-xs font-mono" style={{ color: '#3d5a47' }}>{t.accuracy}</div>
-              </div>
-              <div>
-                <div className="font-display text-2xl text-glow">50K+</div>
-                <div className="text-xs font-mono" style={{ color: '#3d5a47' }}>{t.trainingImages}</div>
-              </div>
-            </motion.div>
           </motion.div>
 
           <motion.div style={{ y: heroY, opacity: heroOpacity }} initial={{ opacity: 0, scale: 0.9, x: 30 }} animate={{ opacity: 1, scale: 1, x: 0 }} transition={{ duration: 1, delay: 0.2 }} className="relative">
@@ -237,13 +222,6 @@ export default function LandingPage({ lang = 'en' }) {
                 <div>
                   <div className="text-xs font-mono text-em-200">{t.processing}</div>
                   <div className="text-sm font-display text-white">{t.analyzingLeaf}</div>
-                </div>
-              </div>
-              <div className="absolute bottom-12 -right-6 glass-bright px-4 py-3 rounded-2xl flex items-center gap-3 shadow-2xl animate-float" style={{ animationDelay: '2s' }}>
-                <CheckCircle2 size={20} color="#34d399" />
-                <div>
-                  <div className="text-xs font-mono text-em-200">{t.alert}</div>
-                  <div className="text-sm font-display text-white">{t.earlyBlight}</div>
                 </div>
               </div>
             </div>
