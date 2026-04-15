@@ -23,7 +23,7 @@ Extract to: `ml/datasets/PlantVillage/`
 ### Local Training
 ```bash
 cd backend
-python train_model.py --data_dir ../ml/datasets/PlantVillage --epochs 30
+python train_model_v2.py --data_dir ../ml/datasets/PlantVillage --epochs 30
 ```
 
 ### Expected Results
@@ -63,5 +63,12 @@ Copy the saved model to the backend:
 cp leaf_disease_model.h5 ../backend/models/
 cp class_indices.json ../backend/models/
 ```
+
+The improved trainer also writes:
+
+- `backend/models/training_artifacts/dataset_split.json`
+- `backend/models/training_artifacts/validation/metrics.json`
+- `backend/models/training_artifacts/test/metrics.json`
+- `backend/models/training_artifacts/*/confusion_matrix.csv`
 
 The backend auto-detects and loads the model on startup.
