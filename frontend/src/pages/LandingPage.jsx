@@ -145,10 +145,10 @@ const cropImages = [
   { slug: 'grapes', img: '/crops/grapes.png' },
   { slug: 'capsicum', img: '/crops/capsicum.png' },
   { slug: 'corn', img: '/crops/corn.jpg?v=2' },
-  { slug: 'chilly', img: 'https://images.unsplash.com/photo-1588013273468-315fd88f11ec?auto=format&fit=crop&q=80&w=800' },
-  { slug: 'cabbage', img: 'https://images.unsplash.com/photo-1559811814-e2c58b5bbcde?auto=format&fit=crop&q=80&w=800' },
-  { slug: 'bottle-guard', img: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&q=80&w=800' },
-  { slug: 'cotton', img: 'https://images.unsplash.com/photo-1594911772125-07fc7a2d8d9f?auto=format&fit=crop&q=80&w=800' }
+  { slug: 'chilly', img: '/crops/chilly.jpg' },
+  { slug: 'cabbage', img: '/crops/cabbage.jpg' },
+  { slug: 'bottle-guard', img: '/crops/bottle_guard.jpg' },
+  { slug: 'cotton', img: '/crops/cotton.jpg' }
 ]
 
 const classColors = {
