@@ -73,15 +73,21 @@ def download_dataset():
     print("Expected time: 5-30 minutes\n")
     
     try:
-        # Download
-        print("Starting download... (this may take several minutes)\n")
         result = subprocess.run([
-            sys.executable, "-m", "kaggle", 
-            "datasets", "download", 
+            "kaggle", "datasets", "download", 
             "-d", "abdallahalbin/plantvillage-dataset",
             "-p", str(output_dir),
             "--unzip"
-        ])
+        ], shell=True)
+        
+        # Download Cotton dataset
+        print("\n📥 Downloading Cotton Disease Dataset...")
+        cotton_result = subprocess.run([
+            "kaggle", "datasets", "download", 
+            "-d", "janmejaybhoi/cotton-disease-dataset",
+            "-p", str(output_dir),
+            "--unzip"
+        ], shell=True)
         
         if result.returncode != 0:
             print("✗ Download failed")

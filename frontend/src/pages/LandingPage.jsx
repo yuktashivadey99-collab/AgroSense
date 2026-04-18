@@ -1,4 +1,4 @@
-﻿import { useRef } from 'react'
+import { useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import {
@@ -37,7 +37,7 @@ const UI_TEXT = {
       { key: 'Critical', desc: 'Urgent attention required' },
       { key: 'Remove', desc: 'Remove the plant to protect nearby crops' },
     ],
-    crops: ['Tomato', 'Grapes', 'Capsicum', 'Corn'],
+    crops: ['Tomato', 'Grapes', 'Capsicum', 'Corn', 'Chilly', 'Cabbage', 'Bottle Guard', 'Cotton'],
   },
   hi: {
     platform: 'एग्रोसेंस एआई प्लेटफ़ॉर्म',
@@ -67,7 +67,7 @@ const UI_TEXT = {
       { key: 'Critical', desc: 'तुरंत ध्यान आवश्यक' },
       { key: 'Remove', desc: 'पास की फसलों की रक्षा के लिए पौधा हटाएँ' },
     ],
-    crops: ['टमाटर', 'अंगूर', 'शिमला मिर्च', 'कॉर्न'],
+    crops: ['टमाटर', 'अंगूर', 'शिमला मिर्च', 'मक्का', 'मिर्ची', 'पत्ता गोभी', 'लौकी', 'कपास'],
   },
   mr: {
     platform: 'AgroSense AI प्लॅटफॉर्म',
@@ -97,7 +97,7 @@ const UI_TEXT = {
       { key: 'Critical', desc: 'त्वरित लक्ष आवश्यक' },
       { key: 'Remove', desc: 'शेजारच्या पिकांचे संरक्षण करण्यासाठी झाड काढा' },
     ],
-    crops: ['टोमॅटो', 'द्राक्षे', 'ढोबळी मिरची', 'कॉर्न'],
+    crops: ['टोमॅटो', 'द्राक्षे', 'ढोबळी मिरची', 'मका', 'मिरची', 'कोबी', 'दुधी भोपळा', 'कापूस'],
   },
   te: {
     platform: 'AgroSense AI ప్లాట్‌ఫారం',
@@ -127,7 +127,7 @@ const UI_TEXT = {
       { key: 'Critical', desc: 'తక్షణ శ్రద్ధ అవసరం' },
       { key: 'Remove', desc: 'పక్క పంటలను కాపాడటానికి మొక్కను తొలగించండి' },
     ],
-    crops: ['టమోటా', 'ద్రాక్ష', 'క్యాప్సికం', 'కార్న్'],
+    crops: ['టమోటా', 'ద్రాక్ష', 'క్యాప్సికం', 'మొక్కజొన్న', 'మిరపకాయ', 'క్యాబేజీ', 'సొరకాయ', 'పత్తి'],
   },
 }
 
@@ -145,6 +145,10 @@ const cropImages = [
   { slug: 'grapes', img: '/crops/grapes.png' },
   { slug: 'capsicum', img: '/crops/capsicum.png' },
   { slug: 'corn', img: '/crops/corn.jpg?v=2' },
+  { slug: 'chilly', img: '/crops/capsicum.png' },
+  { slug: 'cabbage', img: '/crops/corn.jpg?v=2' },
+  { slug: 'bottle-guard', img: '/crops/corn.jpg?v=2' },
+  { slug: 'cotton', img: '/crops/corn.jpg?v=2' }
 ]
 
 const classColors = {

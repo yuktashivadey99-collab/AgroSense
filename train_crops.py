@@ -22,11 +22,11 @@ sys.path.insert(0, str(Path(__file__).parent / "backend"))
 
 def print_header(text):
     print("\n" + "="*70)
-    print(f"🚀 {text}")
+    print(f"[*] {text}")
     print("="*70)
 
 def print_section(text):
-    print(f"\n📋 {text}")
+    print(f"\n[+] {text}")
     print("-" * 70)
 
 def main():
@@ -61,7 +61,13 @@ def main():
             "aliases": ["capsicum", "chilly", "pepper", "shimla mirch"],
             "target_accuracy": 0.94,
             "description": "Bacterial spot, Healthy"
-
+        },
+        "Cotton": {
+            "native_name": "Cotton",
+            "diseases": 4,
+            "aliases": ["cotton", "kapas"],
+            "target_accuracy": 0.95,
+            "description": "Bacterial blight, Curl virus, Fusarium wilt, Healthy"
         },
         "Squash": {
             "native_name": "Squash",
@@ -75,14 +81,14 @@ def main():
     print_section("TARGET CROPS & EXPECTED PERFORMANCE")
     total_diseases = 0
     for crop, info in target_crops.items():
-        print(f"\n  🌱 {crop.upper()}")
+        print(f"\n  - {crop.upper()}")
         print(f"     Disease Types: {info['diseases']}")
         print(f"     Aliases: {', '.join(info['aliases'])}")
         print(f"     Target Accuracy: {info['target_accuracy']*100:.0f}%")
         print(f"     Diseases: {info['description']}")
         total_diseases += info['diseases']
     
-    print(f"\n  📊 TOTAL: {len(target_crops)} crop types, {total_diseases} disease categories")
+    print(f"\n  * TOTAL: {len(target_crops)} crop types, {total_diseases} disease categories")
     
     # Check dataset
     print_section("DATASET VERIFICATION")
@@ -90,18 +96,18 @@ def main():
     
     if dataset_path.exists():
         classes = list(dataset_path.glob("*"))
-        print(f"✓ Dataset found: {len(classes)} total classes")
-        print(f"✓ Location: {dataset_path}")
+        print(f"OK Dataset found: {len(classes)} total classes")
+        print(f"OK Location: {dataset_path}")
         
         # Count target crop images
-        target_class_patterns = ["Tomato", "Grape", "Corn", "Pepper", "Squash"]
+        target_class_patterns = ["Tomato", "Grape", "Corn", "Pepper", "Squash", "Cotton"]
         for pattern in target_class_patterns:
             matching = [c for c in classes if pattern in c.name]
             if matching:
                 img_count = sum(len(list(c.glob("*.[jp]*g"))) for c in matching)
-                print(f"  ✓ {pattern}: {len(matching)} classes, ~{img_count} images")
+                print(f"  OK {pattern}: {len(matching)} classes, ~{img_count} images")
     else:
-        print("⚠ Dataset NOT FOUND")
+        print("! Dataset NOT FOUND")
         print("\n  Download from Kaggle:")
         print("  1. pip install kaggle")
         print("  2. Setup credentials: https://www.kaggle.com/settings/account")
@@ -126,7 +132,7 @@ def main():
     for key, value in config.items():
         print(f"  • {key}: {value}")
     
-    print("\n  ⏱️ Estimated Training Time:")
+    print("\n  * Estimated Training Time:")
     print("     - GPU (NVIDIA): 2-3 hours")
     print("     - CPU: 4-8 hours")
     print("     - Google Colab T4: 40-60 minutes")
@@ -143,7 +149,7 @@ def main():
     user_input = input("\n  Proceed with training? (yes/no): ").strip().lower()
     
     if user_input not in ['yes', 'y']:
-        print("\n❌ Training cancelled")
+        print("\n! Training cancelled")
         return 1
     
     # Start training
@@ -161,21 +167,21 @@ def main():
         filter_crop = crop_name.split()[0]
         output_file = f"models/{crop_name}_model.h5"
         
-        cmd = f"""python train_model_v2.py \\
-            --data_dir {config['data_dir']} \\
-            --output {output_file} \\
-            --epochs {config['epochs']} \\
-            --seed {config['seed']} \\
-            --crop "{filter_crop}" """
+        if os.path.exists(output_file):
+            print(f"\n[*] Model {output_file} already exists! Skipping to save time...")
+            success_count += 1
+            continue
         
-        print(f"\n  Running command: $ {cmd.replace(chr(92), ' ')}\n")
+        cmd = f'python train_model_v2.py --data_dir {config["data_dir"]} --output {output_file} --epochs {config["epochs"]} --seed {config["seed"]} --crop "{filter_crop}"'
+        
+        print(f"\n  Running command: $ {cmd}\n")
         result = os.system(cmd)
         
         if result == 0:
-            print(f"\n✅ Model Training Successful for {crop_name}!")
+            print(f"\nOK Model Training Successful for {crop_name}!")
             success_count += 1
         else:
-            print(f"\n❌ Model Training Failed for {crop_name}.")
+            print(f"\n! Model Training Failed for {crop_name}.")
 
     print_header(f"TRAINING COMPLETE: {success_count}/{total_crops} successful.")
     
@@ -187,7 +193,7 @@ def main():
         print("     1. Run API server: python app.py")
         return 0 if success_count == total_crops else 1
     else:
-        print("\n❌ All training failed.")
+        print("\n  ! All training failed.")
         return 1
 
 if __name__ == "__main__":
