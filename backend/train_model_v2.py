@@ -41,7 +41,7 @@ def save_json(path: Path, payload: dict) -> None:
         json.dump(payload, handle, indent=2)
 
 
-def discover_dataset(data_dir: str) -> tuple[list[str], list[str], list[str]]:
+def discover_dataset(data_dir: str, target_crop: str = None) -> tuple[list[str], list[str], list[str]]:
     root = Path(data_dir)
     if not root.exists():
         raise FileNotFoundError(f"Dataset directory not found: {root}")
@@ -55,6 +55,9 @@ def discover_dataset(data_dir: str) -> tuple[list[str], list[str], list[str]]:
     class_names: list[str] = []
 
     for class_dir in class_dirs:
+        if target_crop and not class_dir.name.lower().startswith(target_crop.lower()):
+            continue
+
         images = sorted(
             path for path in class_dir.rglob("*")
             if path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS
@@ -239,14 +242,14 @@ def evaluate_and_export(
     return metrics
 
 
-def train(data_dir: str, output_path: str, epochs: int, seed: int) -> keras.Model:
+def train(data_dir: str, output_path: str, epochs: int, seed: int, target_crop: str = None) -> keras.Model:
     tf.keras.utils.set_random_seed(seed)
 
     print("\n============================================================")
-    print("AgroSense AI training")
+    print(f"AgroSense AI training (Crop: {target_crop or 'All'})")
     print("============================================================\n")
 
-    paths, labels, class_names = discover_dataset(data_dir)
+    paths, labels, class_names = discover_dataset(data_dir, target_crop)
     splits = stratified_split(paths, labels, class_names, TRAIN_RATIO, VAL_RATIO, seed)
 
     train_paths, train_labels = splits["train"]
@@ -270,7 +273,9 @@ def train(data_dir: str, output_path: str, epochs: int, seed: int) -> keras.Mode
     artifacts_dir = output.parent / "training_artifacts"
     artifacts_dir.mkdir(parents=True, exist_ok=True)
 
-    save_json(output.parent / "class_indices.json", {str(index): name for index, name in enumerate(class_names)})
+    crop_prefix = target_crop if target_crop else "all"
+    indices_filename = f"{crop_prefix}_class_indices.json"
+    save_json(output.parent / indices_filename, {str(index): name for index, name in enumerate(class_names)})
     save_json(artifacts_dir / "dataset_split.json", {
         "train_count": len(train_paths),
         "val_count": len(val_paths),
@@ -325,7 +330,7 @@ def train(data_dir: str, output_path: str, epochs: int, seed: int) -> keras.Mode
     print("\nValidation metrics:", {key: round(float(value), 4) for key, value in val_metrics.items()})
     print("Test metrics:", {key: round(float(value), 4) for key, value in test_metrics.items()})
     print(f"\nModel saved to: {output}")
-    print(f"Class map saved to: {output.parent / 'class_indices.json'}")
+    print(f"Class map saved to: {output.parent / indices_filename}")
     print(f"Artifacts saved to: {artifacts_dir}")
 
     return model
@@ -337,6 +342,7 @@ if __name__ == "__main__":
     parser.add_argument("--output", default="models/leaf_disease_model.h5", help="Output model path")
     parser.add_argument("--epochs", type=int, default=EPOCHS, help="Total training epochs")
     parser.add_argument("--seed", type=int, default=SEED, help="Random seed")
+    parser.add_argument("--crop", type=str, default=None, help="Target crop to train a specialized model for")
     args = parser.parse_args()
 
-    train(args.data_dir, args.output, args.epochs, args.seed)
+    train(args.data_dir, args.output, args.epochs, args.seed, args.crop)

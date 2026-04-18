@@ -11,7 +11,8 @@ from config import settings
 
 # Lazy-load TensorFlow to avoid import overhead
 _tf   = None
-_model = None
+_models_cache = {}
+_class_indices_cache = {}
 
 # ─── Disease Classes ───────────────────────────────────────────────────────────
 # Matches the PlantVillage dataset class ordering (38 classes subset shown below)
@@ -57,23 +58,7 @@ _FALLBACK_DISEASE_CLASSES = [
 ]
 
 
-def _load_disease_classes() -> list[str]:
-    """Load class order from class_indices.json saved during training."""
-    mapping_path = os.path.join(os.path.dirname(__file__), "class_indices.json")
-    try:
-        with open(mapping_path, "r", encoding="utf-8") as fh:
-            class_map = json.load(fh)
-        ordered = [label for _, label in sorted(class_map.items(), key=lambda kv: int(kv[0]))]
-        if ordered:
-            return ordered
-        print(f"class_indices.json at '{mapping_path}' is empty; using fallback classes.")
-    except Exception as exc:
-        print(f"Failed to load class indices from '{mapping_path}': {exc}")
-        print("Using fallback disease classes.")
-    return _FALLBACK_DISEASE_CLASSES
-
-
-DISEASE_CLASSES = _load_disease_classes()
+DISEASE_CLASSES = _FALLBACK_DISEASE_CLASSES
 
 def _crop_token_from_label(label: str) -> str:
     if "___" in label:
@@ -266,38 +251,59 @@ def _load_legacy_h5_by_name(path: str):
     return model
 
 
-def load_model(model_path: str = None):
-    """Load (or create stub) MobileNetV2 model."""
-    global _model
-    if _model is not None:
-        return _model
+def load_model_for_crop(crop_name: str | None):
+    """Load (or create stub) MobileNetV2 model for a specific crop."""
+    if not crop_name:
+        return None, _FALLBACK_DISEASE_CLASSES
 
-    path = model_path or settings.model_path
+    aliases = _crop_aliases()
+    norm = _normalize_crop_name(crop_name)
+    base_crop = None
+    for k, v in aliases.items():
+        if norm in v:
+            base_crop = k.title()
+            break
 
-    if os.path.exists(path):
+    prefix = "Tomato"
+    if base_crop == "Pepper Bell" or base_crop == "Capsicum" or base_crop == "Pepper":
+        prefix = "Pepper"
+    elif base_crop == "Corn" or base_crop == "Maize":
+        prefix = "Corn"
+    elif base_crop:
+        prefix = base_crop.split()[0]
+
+    if prefix in _models_cache:
+        return _models_cache[prefix], _class_indices_cache.get(prefix, _FALLBACK_DISEASE_CLASSES)
+
+    import json
+    import os
+    # Load class indices
+    mapping_path = os.path.join(os.path.dirname(__file__), f"{prefix}_class_indices.json")
+    classes = _FALLBACK_DISEASE_CLASSES
+    if os.path.exists(mapping_path):
+        try:
+            with open(mapping_path, "r", encoding="utf-8") as fh:
+                class_map = json.load(fh)
+            classes = [label for _, label in sorted(class_map.items(), key=lambda kv: int(kv[0]))]
+        except Exception as exc:
+            pass
+    _class_indices_cache[prefix] = classes
+
+    # Load model
+    model_path = os.path.join(os.path.dirname(__file__), f"{prefix}_model.h5")
+    model = None
+    if os.path.exists(model_path):
         try:
             tf = _load_tf()
-            print(f"Loading model from {path}")
-            _model = tf.keras.models.load_model(path, compile=False)
+            print(f"Loading {prefix} model from {model_path}")
+            model = tf.keras.models.load_model(model_path, compile=False)
         except Exception as exc:
-            print(f"Standard model load failed for '{path}': {exc}")
-            try:
-                print("Attempting legacy H5 compatibility load...")
-                _model = _load_legacy_h5_model(path)
-            except Exception as legacy_exc:
-                print(f"Legacy H5 compatibility load failed for '{path}': {legacy_exc}")
-                try:
-                    print("Attempting legacy H5 weight-by-name load...")
-                    _model = _load_legacy_h5_by_name(path)
-                except Exception as name_exc:
-                    print(f"Legacy H5 weight-by-name load failed for '{path}': {name_exc}")
-                    print("Using statistical fallback predictor instead.")
-                    _model = None
+            print(f"Standard model load failed for '{model_path}': {exc}")
     else:
-        print(f"Model not found at '{path}'. Using statistical fallback predictor.")
-        _model = None
+        print(f"Model not found at '{model_path}'. Using statistical fallback predictor.")
 
-    return _model
+    _models_cache[prefix] = model
+    return model, classes
 
 
 def _normalize_crop_name(crop_name: str | None) -> str | None:
@@ -447,7 +453,7 @@ def predict_leaf_disease(
     Falls back to visual heuristics only when model is unavailable.
     image_array: shape (1, 224, 224, 3), float32, [0,1]
     """
-    model = load_model()
+    model, disease_classes = load_model_for_crop(selected_crop)
     confidence_gap = 0.0
 
     if model is not None:
@@ -455,7 +461,7 @@ def predict_leaf_disease(
         top_indices = np.argsort(preds)[-3:]  # Top 3 predictions
         class_idx = int(top_indices[-1])
         confidence = float(preds[class_idx])
-        disease_class = DISEASE_CLASSES[class_idx] if class_idx < len(DISEASE_CLASSES) else "Unknown"
+        disease_class = disease_classes[class_idx] if class_idx < len(disease_classes) else "Unknown"
         
         # Calculate confidence gap between top-2 predictions
         second_best = float(preds[top_indices[-2]]) if len(top_indices) > 1 else 0.0
