@@ -145,10 +145,10 @@ const cropImages = [
   { slug: 'grapes', img: '/crops/grapes.png' },
   { slug: 'capsicum', img: '/crops/capsicum.png' },
   { slug: 'corn', img: '/crops/corn.jpg?v=2' },
-  { slug: 'chilly', img: '/crops/chilly.jpg' },
+  { slug: 'chilly', img: '/crops/chilly.png' },
   { slug: 'cabbage', img: '/crops/cabbage.jpg' },
-  { slug: 'bottle-guard', img: '/crops/bottle_guard.jpg' },
-  { slug: 'cotton', img: '/crops/cotton.jpg' }
+  { slug: 'bottle-guard', img: '/crops/bottle_guard.png' },
+  { slug: 'cotton', img: '/crops/cotton.png' }
 ]
 
 const classColors = {
