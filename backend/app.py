@@ -14,6 +14,7 @@ from logger import setup_logging
 from schemas import HealthResponse, ErrorResponse
 from api.v1.analyze import router as analyze_router
 from api.v1.history import router as history_router
+from api.v1.farm_info import router as farm_router
 from routes.auth import router as auth_router
 
 # Setup logging
@@ -93,6 +94,11 @@ app.include_router(
     prefix="/api/v1/auth",
     tags=["auth"]
 )
+app.include_router(
+    farm_router,
+    prefix="/api/v1/farm",
+    tags=["farm conditions"]
+)
 
 # Backward compatibility - include v1 routes at /api
 app.include_router(
@@ -109,6 +115,11 @@ app.include_router(
     auth_router,
     prefix="/api/auth",
     tags=["auth"]
+)
+app.include_router(
+    farm_router,
+    prefix="/api/farm",
+    tags=["farm conditions"]
 )
 
 # Backward compatibility - redirect old endpoints

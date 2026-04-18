@@ -78,7 +78,7 @@ def download_dataset():
         result = subprocess.run([
             sys.executable, "-m", "kaggle", 
             "datasets", "download", 
-            "-d", "emmarex/plantdisease",
+            "-d", "abdallahalbin/plantvillage-dataset",
             "-p", str(output_dir),
             "--unzip"
         ])
@@ -169,7 +169,7 @@ def main():
     # Download
     if not download_dataset():
         print("\n✗ Download failed. Try manually:")
-        print("  1. Visit: https://www.kaggle.com/datasets/emmarex/plantdisease")
+        print("  1. Visit: https://www.kaggle.com/datasets/abdallahalbin/plantvillage-dataset")
         print("  2. Click Download")
         print("  3. Extract to: ml/datasets/PlantVillage/")
         return 1
