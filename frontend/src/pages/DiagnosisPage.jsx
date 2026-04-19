@@ -9,26 +9,14 @@ import ResultCard from '../components/ResultCard'
 import { apiClient } from '../utils/api'
 
 const DEFAULT_SUPPORTED_CROPS = [
-  'Apple',
-  'Blueberry',
-  'Bottleguard',
-  'Cabbage',
-  'Capsicum',
-  'Cherry',
-  'Chilly',
-  'Corn',
-  'Cotton',
-  'Grape',
-  'Maize',
-  'Orange',
-  'Peach',
-  'Pepper Bell',
-  'Potato',
-  'Raspberry',
-  'Soybean',
-  'Squash',
-  'Strawberry',
   'Tomato',
+  'Grape',
+  'Corn',
+  'Chilly',
+  'Pepper Bell',
+  'Cabbage',
+  'Bottle Guard',
+  'Cotton',
 ]
 
 const STEP_LABELS = {

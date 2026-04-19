@@ -79,11 +79,18 @@ def _display_name_for_class(label: str) -> str:
 
 
 # Use ASCII display labels consistently in the API/UI layer.
+SUPPORTED_CROPS = [
+    "Tomato",
+    "Grape",
+    "Corn",
+    "Chilly",
+    "Pepper Bell",
+    "Cabbage",
+    "Bottle Guard",
+    "Cotton"
+]
+
 DISPLAY_NAMES = {label: _display_name_for_class(label) for label in DISEASE_CLASSES}
-SUPPORTED_CROPS = sorted({
-    " ".join(_crop_token_from_label(label).replace(",", "").replace("_", " ").split()).title()
-    for label in DISEASE_CLASSES
-})
 
 # Human-readable names
 

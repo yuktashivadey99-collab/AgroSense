@@ -27,8 +27,14 @@ YELLOW_HUE_HIGH  = np.array([35, 255, 255])
 # ─── Core Functions ────────────────────────────────────────────────────────────
 
 def load_image_from_bytes(file_bytes: bytes) -> Image.Image:
-    """Load PIL image from raw bytes."""
-    return Image.open(io.BytesIO(file_bytes)).convert('RGB')
+    """Load PIL image from raw bytes with explicit error reporting."""
+    try:
+        if not file_bytes:
+            raise ValueError("Zero bytes received by image loader.")
+        return Image.open(io.BytesIO(file_bytes)).convert('RGB')
+    except Exception as e:
+        # Re-raise with more context
+        raise ValueError(f"Pillow failed to open image: {str(e)}. Bytes received: {len(file_bytes)}")
 
 
 def preprocess_for_model(pil_image: Image.Image) -> np.ndarray:
