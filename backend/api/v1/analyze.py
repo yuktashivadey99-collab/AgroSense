@@ -78,7 +78,10 @@ async def analyze(
     # Process leaf image
     if leaf_image:
         try:
+            await leaf_image.seek(0)  # Reset stream position before reading
             leaf_bytes = await leaf_image.read()
+            if not leaf_bytes:
+                raise HTTPException(status_code=422, detail="Leaf image file is empty. Please upload a valid image.")
             leaf_img = load_image_from_bytes(leaf_bytes)
             leaf_arr = preprocess_for_model(leaf_img)
             cdi_score = calculate_cdi(leaf_img)
@@ -90,6 +93,8 @@ async def analyze(
                 visual_stats=visual_stats,
             )
             logger.info("leaf_analysis_completed", disease=leaf_result.get("disease"))
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error("leaf_image_processing_failed", error=str(e))
             raise HTTPException(status_code=422, detail=f"Leaf image processing failed: {str(e)}")
@@ -97,12 +102,17 @@ async def analyze(
     # Process stem image
     if stem_image:
         try:
+            await stem_image.seek(0)  # Reset stream position before reading
             stem_bytes = await stem_image.read()
+            if not stem_bytes:
+                raise HTTPException(status_code=422, detail="Stem image file is empty. Please upload a valid image.")
             stem_img = load_image_from_bytes(stem_bytes)
             stem_result = analyze_stem(stem_img)
             if not leaf_image:
                 cdi_score = calculate_cdi(stem_img)
             logger.info("stem_analysis_completed", condition=stem_result.get("condition"))
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error("stem_image_processing_failed", error=str(e))
             raise HTTPException(status_code=422, detail=f"Stem image processing failed: {str(e)}")
