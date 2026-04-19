@@ -38,24 +38,30 @@ def analyze():
     # ── Leaf Analysis ──────────────────────────────────────────────────────────
     if leaf_file:
         try:
+            leaf_file.seek(0)  # Reset stream to start before reading
             leaf_bytes = leaf_file.read()
-            leaf_img   = load_image_from_bytes(leaf_bytes)
-            leaf_arr   = preprocess_for_model(leaf_img)
-            cdi_score  = calculate_cdi(leaf_img)
+            if not leaf_bytes:
+                return jsonify({"error": "Leaf image file is empty. Please upload a valid image."}), 422
+            leaf_img    = load_image_from_bytes(leaf_bytes)
+            leaf_arr    = preprocess_for_model(leaf_img)
+            cdi_score   = calculate_cdi(leaf_img)
             leaf_result = predict_leaf_disease(leaf_arr)
         except Exception as e:
-            return jsonify({"error": f"Leaf image processing failed: {str(e)}"}), 422
+            return jsonify({"error": f"Leaf image processing failed: {str(e)}", "hint": "Ensure the file is a valid JPG/PNG/WebP image."}), 422
 
     # ── Stem Analysis ──────────────────────────────────────────────────────────
     if stem_file:
         try:
-            stem_bytes  = stem_file.read()
+            stem_file.seek(0)  # Reset stream to start before reading
+            stem_bytes = stem_file.read()
+            if not stem_bytes:
+                return jsonify({"error": "Stem image file is empty. Please upload a valid image."}), 422
             stem_img    = load_image_from_bytes(stem_bytes)
             stem_result = analyze_stem(stem_img)
             if not leaf_file:
                 cdi_score = calculate_cdi(stem_img)
         except Exception as e:
-            return jsonify({"error": f"Stem image processing failed: {str(e)}"}), 422
+            return jsonify({"error": f"Stem image processing failed: {str(e)}", "hint": "Ensure the file is a valid JPG/PNG/WebP image."}), 422
 
     # ── Adaptive Fusion ────────────────────────────────────────────────────────
     result = adaptive_fusion(leaf_result, stem_result, cdi_score)
