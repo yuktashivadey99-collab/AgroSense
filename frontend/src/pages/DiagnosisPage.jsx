@@ -1,4 +1,4 @@
-﻿import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../contexts/AuthContext'
 import AuthModal from '../components/AuthModal'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -214,7 +214,8 @@ export default function DiagnosisPage({ lang = 'en' }) {
 
     try {
       const res = await apiClient.post('/api/analyze', fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        // Do NOT set Content-Type manually — axios auto-sets multipart/form-data
+        // with the correct boundary when FormData is passed
         timeout: 30000,
       })
       setBackendOnline(true)
