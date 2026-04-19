@@ -17,12 +17,11 @@ env/
 .env
 *.env.local
 
-# ML Models (large files)
-backend/models/*.h5
-backend/models/*.keras
-backend/models/*.pb
+# ML Datasets (very large, download separately)
 backend/ml/datasets/
 ml/datasets/
+
+# Keep *.h5 models tracked (all are <50MB, safe for GitHub)
 # Logs
 logs/
 *.log

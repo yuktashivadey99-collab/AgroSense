@@ -1,0 +1,8 @@
+{
+  "train_count": 1215,
+  "val_count": 260,
+  "test_count": 261,
+  "class_names": [
+    "Squash___Powdery_mildew"
+  ]
+}

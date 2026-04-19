@@ -1,0 +1,15 @@
+{
+  "overall": {
+    "loss": 0.0356,
+    "accuracy": 0.0,
+    "top3_acc": 1.0
+  },
+  "per_class": {
+    "Squash___Powdery_mildew": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 261
+    }
+  }
+}
