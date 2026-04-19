@@ -78,21 +78,26 @@ async def analyze(
     # Process leaf image
     if leaf_image:
         try:
-            await leaf_image.seek(0)  # Reset stream position before reading
+            await leaf_image.seek(0)
             leaf_bytes = await leaf_image.read()
-            if not leaf_bytes:
-                raise HTTPException(status_code=422, detail="Leaf image file is empty. Please upload a valid image.")
+            byte_size = len(leaf_bytes)
+            
+            if byte_size == 0:
+                raise HTTPException(status_code=422, detail="Leaf image received is empty (0 bytes).")
+            
+            # Load image from bytes
             leaf_img = load_image_from_bytes(leaf_bytes)
             leaf_arr = preprocess_for_model(leaf_img)
             cdi_score = calculate_cdi(leaf_img)
             visual_stats = green_vs_brown_ratio(leaf_img)
+            
             leaf_result = predict_leaf_disease(
                 leaf_arr,
                 selected_crop=normalized_crop_name,
                 cdi_score=cdi_score,
                 visual_stats=visual_stats,
             )
-            logger.info("leaf_analysis_completed", disease=leaf_result.get("disease"))
+            logger.info("leaf_analysis_completed", disease=leaf_result.get("disease"), size_kb=byte_size // 1024)
         except HTTPException:
             raise
         except Exception as e:
